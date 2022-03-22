@@ -1,3 +1,5 @@
+#ifndef reg_guard
+#define reg_guard
 #include<stdlib.h>
 #include<stdio.h>
 #include<string.h>
@@ -26,3 +28,4 @@ typedef struct REG_STRUCT{
 }reg_t;
 reg_t reg;
 
+#endif

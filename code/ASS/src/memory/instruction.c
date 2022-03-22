@@ -2,8 +2,10 @@
 #include "cpu/mmu.h"
 #include "cpu/register.h"
 
-static uint16_t decode_od(od_t od){
-  if(od.type == IMM) return od.imm;
+static uint64_t decode_od(od_t od){
+  if(od.type == IMM) return *((uint64_t *)&od.imm); 
+  //返回值为uint64_t need to transfer into uint64_t
+  //difference with transfer diectly ?
   if(od.type == REG) return (uint64_t)od.reg1;
 
   //else  mm
@@ -37,8 +39,6 @@ static uint16_t decode_od(od_t od){
   }
 
   return va2pa(vaddr);
-
-
 }
 
 void instruction_cycle(){
@@ -56,9 +56,17 @@ void instruction_cycle(){
 
 
 void init_handler_tavle(){
+  handler_table[mov_reg_reg] = &mov_reg_reg_handler;
   handler_table[add_reg_reg] = &add_reg_reg_handler;
+
 }
 void add_reg_reg_handler(uint64_t src, uint64_t dst){
   *(uint64_t*)dst += *(uint64_t*)src;
+  reg.rip += sizeof(inst_t);
+}
+
+
+void mov_reg_reg_handler(uint64_t src, uint64_t dst){
+  *(uint64_t*)dst = *(uint64_t*)src;
   reg.rip += sizeof(inst_t);
 }
