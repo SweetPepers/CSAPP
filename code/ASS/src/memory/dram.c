@@ -3,6 +3,7 @@
 #include "cpu/mmu.h"
 
 #define SRAM_CACHE_SRTTING 0  //是否读写
+
 //flighting 
 uint64_t read64bits_dram(uint64_t paddr){
   if(SRAM_CACHE_SRTTING == 1){
@@ -38,9 +39,9 @@ void wirte64bits_dram(uint64_t paddr, uint64_t data){
 }
 
 void print_regsiter(){
-  printf("rax = %lx\trbx = %lx\trcx = %lx\trdx = %lx\n", (unsigned long)reg.rax, (unsigned long)reg.rbx, (unsigned long)reg.rcx, (unsigned long)reg.rdx);
-  printf("rsi = %lx\trdi = %lx\trbp = %lx\trsp = %lx\n",(unsigned long)reg.rsi, (unsigned long)reg.rdi, (unsigned long)reg.rbp, (unsigned long)reg.rsp);
-  printf("rip = %lx\n", (unsigned long)reg.rip);
+  printf("rax = %16lx\trbx = %16lx\trcx = %16lx\trdx = %16lx\n", (unsigned long)reg.rax, (unsigned long)reg.rbx, (unsigned long)reg.rcx, (unsigned long)reg.rdx);
+  printf("rsi = %16lx\trdi = %16lx\trbp = %16lx\trsp = %16lx\n",(unsigned long)reg.rsi, (unsigned long)reg.rdi, (unsigned long)reg.rbp, (unsigned long)reg.rsp);
+  printf("rip = %16lx\n", (unsigned long)reg.rip);
 }
 
 void print_stack(){
@@ -50,7 +51,7 @@ void print_stack(){
 
   for(int i = 0; i< 2*n;i++){
     uint64_t *ptr = (uint64_t *)(high-i);
-    printf("%p: %lx", ptr, (unsigned long)*ptr);
+    printf("%p: %16lx", ptr, (unsigned long)*ptr);
 
     if (i==n){
       printf(" <== rsp");

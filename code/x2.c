@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdint.h>
+
 //有点失败
 uint32_t uint2float(uint32_t u){  //s1e8f23
   if(u == 0) return 0;
@@ -53,6 +54,9 @@ uint32_t uint2float(uint32_t u){  //s1e8f23
 
 int main(){
   uint32_t u = 0x80081231;
-  printf("%x\n",uint2float(u));
+  // printf("%x\n",uint2float(u));
+  printf("uint64_t:%d, pointer :%d", sizeof(uint64_t), sizeof(uint64_t*));
+  printf("__WORDSIZE:%d \n", __WORDSIZE);
+
   return 0;
 }

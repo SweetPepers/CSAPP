@@ -5,6 +5,7 @@
 
 
 #define MM_LEN 1000
+
 uint8_t mm[MM_LEN];  //1000bytes memory 
 // physical memroy 0->999
 

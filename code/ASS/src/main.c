@@ -4,13 +4,14 @@
 #include "cpu/mmu.h"
 #include "disk/elf.h"
 
+// const uint64_t mem_off_set = 0x7ffffffee1f0 - 0x408B40;
 //redeclaration  error caused by include 
 // include guard 
 
 int main(){
 
   
-  init_handler_tavle();
+  init_handler_table();
 
   //init reg
   reg.rax = 0x12340000;
@@ -33,14 +34,16 @@ int main(){
   wirte64bits_dram(va2pa(0x7ffffffee1f8), 0x12340000);
   wirte64bits_dram(va2pa(0x7ffffffee1f0), 0x08000660);//rsp
 
-
-  //run inst 
-  for(int i = 0;i<1;i++){
-    instruction_cycle();
-  }
-
   print_regsiter();
   print_stack();
+  //run inst 
+  for(int i = 0;i<7;i++){
+    instruction_cycle();
+    print_regsiter();
+    print_stack();
+  }
+
+ 
 
   
   //varify

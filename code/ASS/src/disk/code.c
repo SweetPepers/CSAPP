@@ -15,9 +15,9 @@ inst_t program[15] =
   //main entry point 
   { //1
     mov_reg_reg,
-    {REG, 0, 0, (uint64_t*)&reg.rdx,  NULL},
-    {REG, 0, 0, (uint64_t*)&reg.rsi,  NULL},
-    "mov \%rdx \%rsi "
+    {REG, 0, 0, (uint64_t*)&reg.rsp,  NULL},
+    {REG, 0, 0, (uint64_t*)&reg.rbp,  NULL},
+    "mov \%rsp \%rbp "
   },
   { //2
     mov_reg_mem,
