@@ -11,9 +11,9 @@ CODE = ./src/memory/instruction.c ./src/disk/code.c ./src/memory/dram.c ./src/cp
 .PHONY: csapp
 csapp:
 	$(GCC) $(CFLASS) -I $(SRC) $(CODE) -o $(EXE)
-
-run:
 	./$(EXE)
+run:
+	
 
 clean:
 	rm -f *.o *~ $(EXE)

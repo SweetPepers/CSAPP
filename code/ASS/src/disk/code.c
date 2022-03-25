@@ -28,7 +28,7 @@ inst_t program[15] =
   { //3
     mov_reg_mem,
     {REG, 0, 0, (uint64_t*)&reg.rsi,  NULL},
-    {MM_IMM_REG, -0x20, 0, (uint64_t*)&reg.rsi, NULL},
+    {MM_IMM_REG, -0x20, 0, (uint64_t*)&reg.rbp, NULL},
     "mov \%rsi,-0x20(\%rbp)"
   },
   { //4

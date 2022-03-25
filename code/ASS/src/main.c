@@ -37,7 +37,7 @@ int main(){
   print_regsiter();
   print_stack();
   //run inst 
-  for(int i = 0;i<7;i++){
+  for(int i = 0;i<15;i++){
     instruction_cycle();
     print_regsiter();
     print_stack();
@@ -59,7 +59,7 @@ int main(){
   match = match && (reg.rsp == 0x7ffffffee1f0);
 
   if(match == 1){
-    printf("register mathc\n");
+    printf("register match\n");
   }else{
     printf("reg not match\n");
   }
@@ -74,7 +74,7 @@ int main(){
 
 
   if(match == 1){
-    printf("memory mathc\n");
+    printf("memory match\n");
   }else{
     printf("mem not match\n");
   }
