@@ -17,7 +17,7 @@ int main(){
 }
 
 
-static void TestAddFunctionCallAndComputation()[
+static void TestAddFunctionCallAndComputation(){
   ACTIVE_CORE = 0x0;
 
   core_t *ac = (core_t *)&cores[ACTIVE_CORE];
@@ -43,21 +43,21 @@ static void TestAddFunctionCallAndComputation()[
   wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
 
   char assembly[15][MAX_INSTRUCTION_CHAR] ={
-    "push  %rbp" //0
-    "mov %rsp, %rbp" //1
+    "push  %rbp"            //0
+    "mov %rsp, %rbp"        //1
     "mov %rdi, -0x18(%rbp)" //2
     "mov %rsi, -0x20(%rbp)" //3
     "mov -0x18(%rbp), %rdx" //4
     "mov -0x20(%rbp), %rax" //5
-    "add %rdx, %rax" //6
-    "mov %rax, -0x8(%rbp)" //7
-    "mov -0x8(%rbp), %rax" //8
-    "pop %rbp" //9
-    "retq" //10
-    "mov %rdx, %rsi" //11
-    "mov %rax, %rdi" //12
-    "callq 0" //13
-    "mov %rax, -0x8(%rbp)" //14
+    "add %rdx, %rax"        //6
+    "mov %rax, -0x8(%rbp)"  //7
+    "mov -0x8(%rbp), %rax"  //8
+    "pop %rbp"              //9
+    "retq"                  //10
+    "mov %rdx, %rsi"        //11
+    "mov %rax, %rdi"        //12
+    "callq 0"               //13
+    "mov %rax, -0x8(%rbp)"  //14
   };
 
   ac->rip = (uint64_t)&assembly[11];
@@ -92,11 +92,11 @@ static void TestAddFunctionCallAndComputation()[
   
   match = 1;
   
-  match = match && (read64bits_dram(va2pa(0x7ffffffee210)) == 0x08000660); //rbp
-  match = match && (read64bits_dram(va2pa(0x7ffffffee208)) == 0x1234abcd);
-  match = match && (read64bits_dram(va2pa(0x7ffffffee200)) == 0xabcd);
-  match = match && (read64bits_dram(va2pa(0x7ffffffee1f8)) == 0x12340000);  //栈从高往低走
-  match = match && (read64bits_dram(va2pa(0x7ffffffee1f0)) == 0x08000660);  //rsp
+  match = match && (read64bits_dram(va2pa(0x7ffffffee210,ac), ac) == 0x08000660); //rbp
+  match = match && (read64bits_dram(va2pa(0x7ffffffee208,ac),ac) == 0x1234abcd);
+  match = match && (read64bits_dram(va2pa(0x7ffffffee200,ac), ac) == 0xabcd);
+  match = match && (read64bits_dram(va2pa(0x7ffffffee1f8,ac),ac) == 0x12340000);  //栈从高往低走
+  match = match && (read64bits_dram(va2pa(0x7ffffffee1f0,ac),ac) == 0x08000660);  //rsp
 
 
   if(match == 1){
@@ -104,7 +104,7 @@ static void TestAddFunctionCallAndComputation()[
   }else{
     printf("mem not match\n");
   }
-
+}
 // const uint64_t mem_off_set = 0x7ffffffee1f0 - 0x408B40;
 //redeclaration  error caused by include 
 // include guard 
