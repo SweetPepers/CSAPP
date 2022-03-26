@@ -13,9 +13,9 @@ COMMON =$(SRC_DIR)/common/print.c $(SRC_DIR)/common/convert.c
 #hardware
 CPU = $(SRC_DIR)/hardware/cpu/mmu.c $(SRC_DIR)/hardware/cpu/isa.c
 
-MEMORY = $(SRC_DIR)/main_hardware.c
+MEMORY = $(SRC_DIR)/hardware/memory/dram.c
 
-
+MAIN_HARDWARE = $(SRC_DIR)/main_hardware.c
 .PHONY: hardware
 hardware:
 	$(GCC) $(CFLASS) -I $(SRC_DIR) $(COMMON) $(CPU) $(MEMORY) $(DISK) $(MAIN_HARDWARE) -o $(EXE_HARDWARE)

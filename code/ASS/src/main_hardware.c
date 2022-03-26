@@ -7,34 +7,57 @@
 #define MAX_NUM_INSTRUCTION_CYCLE 100
 
 static void TestAddFunctionCallAndComputation();
+static void TestString2Uint();
 
 void print_register(core_t *cr);
 void print_stack(core_t *cr);
 
+
 int main(){
-  TestAddFunctionCallAndComputation();
+  TestString2Uint();
+  // TestAddFunctionCallAndComputation();
   return 0;
 }
 
+static void TestString2Uint(){
+  // char  nums[10][64] ={
+  //   0x00
+  // }; 
+
+  const char* nums[10] = {
+    "0",
+    "-0",
+    "1231",
+    "-13123",
+    "0x123",
+    "-0x1231",
+    "2147483647",
+    "-2147483648",
+    "0x8000000000000000",
+    "0xffffffffffffffff"
+  };
+
+  for(int i = 0;i<10;i++){
+    printf("%s => %I64x\n", nums[i], string2uint(nums[i]));
+  }
+
+}
 
 static void TestAddFunctionCallAndComputation(){
   ACTIVE_CORE = 0x0;
 
   core_t *ac = (core_t *)&cores[ACTIVE_CORE];
 
-  ac->reg.rax = 
-  ac->reg.rbx = 
-  ac->reg.rcx = 
-  ac->reg.rdx = 
-  ac->reg.rsi = 
-  ac->reg.rdi = 
-  ac->reg.rbp = 
-  ac->reg.rsp = 
+  ac->reg.rax = 0x0;
+  ac->reg.rbx = 0x0;
+  ac->reg.rcx = 0x0;
+  ac->reg.rdx = 0x0;
+  ac->reg.rsi = 0x0;
+  ac->reg.rdi = 0x0;
+  ac->reg.rbp = 0x0;
+  ac->reg.rsp = 0x0;
 
-  ac->CF = 0;
-  ac->ZF = 0;
-  ac->SF = 0;
-  ac->OF = 0;
+  ac->flags.__flag_values = 0;
 
   wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
   wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
@@ -43,21 +66,21 @@ static void TestAddFunctionCallAndComputation(){
   wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
 
   char assembly[15][MAX_INSTRUCTION_CHAR] ={
-    "push  %rbp"            //0
-    "mov %rsp, %rbp"        //1
-    "mov %rdi, -0x18(%rbp)" //2
-    "mov %rsi, -0x20(%rbp)" //3
-    "mov -0x18(%rbp), %rdx" //4
-    "mov -0x20(%rbp), %rax" //5
-    "add %rdx, %rax"        //6
-    "mov %rax, -0x8(%rbp)"  //7
-    "mov -0x8(%rbp), %rax"  //8
-    "pop %rbp"              //9
-    "retq"                  //10
-    "mov %rdx, %rsi"        //11
-    "mov %rax, %rdi"        //12
-    "callq 0"               //13
-    "mov %rax, -0x8(%rbp)"  //14
+    "push  %rbp",            //0
+    "mov %rsp, %rbp",        //1
+    "mov %rdi, -0x18(%rbp)", //2
+    "mov %rsi, -0x20(%rbp)", //3
+    "mov -0x18(%rbp), %rdx", //4
+    "mov -0x20(%rbp), %rax", //5
+    "add %rdx, %rax",        //6
+    "mov %rax, -0x8(%rbp)",  //7
+    "mov -0x8(%rbp), %rax",  //8
+    "pop %rbp",              //9
+    "retq",                  //10
+    "mov %rdx, %rsi",        //11
+    "mov %rax, %rdi",        //12
+    "callq 0",               //13
+    "mov %rax, -0x8(%rbp)",  //14
   };
 
   ac->rip = (uint64_t)&assembly[11];
@@ -67,7 +90,7 @@ static void TestAddFunctionCallAndComputation(){
   int time = 0;
   while(time < 15){
     instruction_cycle(ac);
-    print_regsiter(ac);
+    print_register(ac);
     print_stack(ac);
     time++;
   }

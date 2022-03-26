@@ -142,6 +142,23 @@ typedef struct REGISTER_STRUCT{
 /*       cpu core                */
 /*===============================*/
 
+typedef union  CPU_FLAGS_STRUCT
+{
+  uint64_t __flag_values;
+  struct{
+    //carry flag :detect overflow for unsigned operations
+    uint16_t CF;
+    //zero flag:
+    uint16_t ZF;
+    //sign flag
+    uint16_t SF;
+    //overflow flag:detect overflow for signed operations
+    uint16_t OF;
+  };
+}cpu_flags_t ;
+
+
+
 typedef struct  CORE_STRUCT{
   //program counter or instruction pointer
   union
@@ -149,15 +166,8 @@ typedef struct  CORE_STRUCT{
     uint64_t rip;
     uint64_t eip;
   };
-  
-  //carry flag :detect overflow for unsigned operations
-  uint32_t CF;
-  //zero flag:
-  uint32_t ZF;
-  //sign flag
-  uint32_t SF;
-  //overflow flag:detect overflow for signed operations
-  uint32_t OF;
+   
+  cpu_flags_t flags;
 
   reg_t reg;
   // uint64_t pdbr; //page directory base register
@@ -175,10 +185,5 @@ void instruction_cycle(core_t *cr);
 //translate virtual address to pa in MMU
 //each core has a MMU
 uint64_t va2pa(uint64_t paddr, core_t *cr);
-
-
-
-
-
 
 #endif

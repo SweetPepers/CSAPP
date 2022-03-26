@@ -1,0 +1,10 @@
+{
+  "git.ignoreLimitWarning": true,
+  "files.associations": {
+    "*.vue": "vue",
+    "*.wpy": "vue",
+    "*.wxml": "html",
+    "*.wxss": "css",
+    "cstdint": "cpp"
+  }
+}
