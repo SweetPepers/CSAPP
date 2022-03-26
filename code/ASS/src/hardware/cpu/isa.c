@@ -151,7 +151,7 @@ static uint64_t reflect_register(const char* str, core_t *cr){
 
 
   for (int i = 0;i<72;i++){
-    if(strcpm(str, reg_name_list[i]) == 0){
+    if(strcmp(str, reg_name_list[i]) == 0){
       //inside reg_name_list
       return reg_addr[i];
     }
@@ -189,11 +189,111 @@ static void parse_operand(const char* str, od_t *od, core_t *cr){
   }else if(str[0] == '%'){
     //register
     od->type = REG;
-    od->reg1 = reflect_register(str, cr); 
-
+    od->reg1 = (uint64_t *)reflect_register(str, cr); 
+    return;
   }else
   {
     //memory     legal
+
+    char imm[64] = {'\0'};
+    int imm_len = 0;
+    
+    char reg1[64] = {'\0'};
+    int reg1_len = 0;
+    
+    char reg2[64]= {'\0'};
+    int reg2_len = 0;
+    
+    char scal[64]= {'\0'};
+    int scal_len = 0;
+
+    int ca = 0; // (  parentheses
+    int cb = 0; // , comma
+    for (int i = 0; i< str_len;++i){
+      char c = str[i];
+      if(c == '(' || c == ')'){
+        ca ++;
+      }else if (c == ','){
+        cb ++;
+      }else{
+        //parse imm(reg1,reg2,scal) 
+        //not allow ' '
+        if (ca == 0){
+          // xxx
+          imm[imm_len] = c;
+          imm_len++;
+          continue;
+        }
+        else if (ca == 1)
+        {
+          if(cb == 0){
+            //???(xxxx
+            //(xxx
+            reg1[reg1_len] = c;
+            reg1_len++;
+            continue;
+          }else if(cb == 1){
+            //???(???,xxxx
+            //(???,xxxx
+            //???(,xxx
+            //(,xxx
+            reg2[reg2_len] = c;
+            reg2_len++;
+            continue;
+          }else if(cb == 2){
+            //(???,???,xxx
+            scal[scal_len] = c;
+            scal_len++;
+            continue;
+          }
+          
+        }
+        
+      }
+    } 
+
+    // imm,reg1,reg2,scal
+    if(imm_len>0){
+      od->imm = string2uint(imm); 
+      if(ca == 0){  //don't have reg
+        od->type = MEM_IMM;
+        return;
+      }
+    }
+    if (scal_len>0){
+       od->scal = string2uint(scal);
+       //scal can only be 1,2,4 and 8
+       if(od->scal!= 1 &&od->scal!= 2 &&od->scal!= 4 &&od->scal!= 8){
+         printf("%s is not a legal scaler\n",scal);
+         exit(0);
+       }
+    }
+    if(reg1_len>0){
+      od->reg1 = (uint64_t *)reflect_register(reg1,cr);
+    }
+    if(reg2_len>0){
+      od->reg2 = (uint64_t *)reflect_register(reg2, cr);
+    }
+
+    //set operand
+    if(cb == 0){  // , = 1
+      od->type = imm_len > 0? MEM_IMM_REG : MEM_REG;
+    }else if(cb == 1){
+      od->type = imm_len>0 ? MEM_IMM_REG1_REG2:MEM_REG1_REG2;
+    }else if(cb == 2){
+      if (reg1_len >0){
+        od->type = imm_len>0? MEM_IMM_REG1_REG2_SCAL:MEM_REG1_REG2_SCAL;
+      }else{
+        od->type = imm_len>0?MEM_IMM_REG2_SCAL:MEM_REG2_SCAL;
+      }
+    }
+
+
+
+
+
+
+    
   }
   
   
@@ -202,6 +302,41 @@ static void parse_operand(const char* str, od_t *od, core_t *cr){
 
 }
 
+
+void TestPaseingOperand(){
+  ACTIVE_CORE = 0;
+
+  core_t *ac = (core_t *)&cores[ACTIVE_CORE];
+  const char* strs[11] = {
+    "$0x123",
+    "%rax",
+    "0xabcd",
+    "(%rsp)",
+    "0xabcd(%rsp)",
+    "(%rsp,%rax)",
+    "0xabcd(%rax,%rbx)", //7
+    "(,%rax,8)", //8
+    "0xabcd(,%rax,8)", //9
+    "(%rax,%rbx,8)",  //10
+    "0xabcd(%rax,%rbx,4)"  //11
+  };
+
+  printf("rax %p\n", &(ac->reg.rax));
+  printf("rbx %p\n", &(ac->reg.rbx));
+  printf("rsp %p\n", &(ac->reg.rsp));
+
+  for (int i =0;i<11;i++){
+    od_t od;
+    parse_operand(strs[i],&od, ac);
+
+    printf("\n%s\n", strs[i]);
+    printf("od enum type : %d\n", od.type);
+    printf("od imm: %I64x\n", (uint64_t)od.imm);
+    printf("od reg1:%I64x\n", (uint64_t)od.reg1);
+    printf("od reg2:%I64x\n", (uint64_t)od.reg2);
+    printf("od scal:%I64x\n", (uint64_t)od.scal);
+  }
+}
 static void mov_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
 static void push_handler         (od_t *src_od, od_t* dst_od, core_t *cr);
 static void pop_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
@@ -428,6 +563,9 @@ void print_register(core_t *cr){
   (unsigned long)cr->reg.rsp);
 
   printf("rip = %16lx\n", (unsigned long)cr->rip);
+
+  printf("CF=%u\tZF=%u\tSF=%u\tOF=%u\n", 
+  cr->flags.CF, cr->flags.ZF, cr->flags.SF, cr->flags.OF);
 }
 
 void print_stack(core_t *cr){
@@ -445,3 +583,5 @@ void print_stack(core_t *cr){
     printf("\n");
   }
 }
+
+

@@ -8,21 +8,21 @@
 
 static void TestAddFunctionCallAndComputation();
 static void TestString2Uint();
+void TestPaseingOperand();
 
 void print_register(core_t *cr);
 void print_stack(core_t *cr);
 
 
+
 int main(){
-  TestString2Uint();
+  TestPaseingOperand();
+  // TestString2Uint();
   // TestAddFunctionCallAndComputation();
   return 0;
 }
 
 static void TestString2Uint(){
-  // char  nums[10][64] ={
-  //   0x00
-  // }; 
 
   const char* nums[10] = {
     "0",
