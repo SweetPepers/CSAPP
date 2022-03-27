@@ -9,6 +9,8 @@
 static void TestAddFunctionCallAndComputation();
 static void TestString2Uint();
 void TestPaseingOperand();
+void TestParseInstruction();
+
 
 void print_register(core_t *cr);
 void print_stack(core_t *cr);
@@ -16,9 +18,10 @@ void print_stack(core_t *cr);
 
 
 int main(){
-  TestPaseingOperand();
+  // TestParseInstruction();
+  // TestPaseingOperand();
   // TestString2Uint();
-  // TestAddFunctionCallAndComputation();
+  TestAddFunctionCallAndComputation();
   return 0;
 }
 
@@ -38,7 +41,7 @@ static void TestString2Uint(){
   };
 
   for(int i = 0;i<10;i++){
-    printf("%s => %I64x\n", nums[i], string2uint(nums[i]));
+    printf("%s => %16lx\n", nums[i], string2uint(nums[i]));
   }
 
 }
@@ -84,6 +87,8 @@ static void TestAddFunctionCallAndComputation(){
   };
 
   ac->rip = (uint64_t)&assembly[11];
+
+  //地址是大写的啊  转化还得额外判断
   sprintf(assembly[13], "callq $%p", &assembly[0]);
 
   printf("begin\n");

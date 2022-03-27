@@ -162,14 +162,202 @@ static uint64_t reflect_register(const char* str, core_t *cr){
 
 }
 
+#define MAX_NODE 1000
+#define CHARSET 26
+static int trie[MAX_NODE][CHARSET] = {0};
+static int trie_value[MAX_NODE] = {0};
+static int trie_k = 1;
+
+static void trie_insert(char *w, int value){
+    int len = strlen(w);
+    int p = 0;
+    for(int i=0; i<len; i++){
+        int c = w[i] - 'a';
+        if(!trie[p][c]){
+            trie[p][c] = trie_k;
+            trie_k++;
+        }
+        p = trie[p][c];
+    }
+    trie_value[p] = value;
+}
+
+static int trie_search(char *s){
+    int len = strlen(s);
+    int p = 0;
+    for(int i=0; i<len; i++){
+        int c = s[i] - 'a';
+        if(!trie[p][c]) return 0;
+        p = trie[p][c];
+    }
+    return trie_value[p];
+}
+
+/*
+typedef enum INST_OPERATOR{
+  INST_MOV,     //0
+  INST_PUSH,    //1
+  INST_POP,     //2
+  INTS_LEAVE,   //3
+  INST_CALL,    //4
+  INST_RET,     //5
+  INST_ADD,     //6
+  INST_SUB,     //7
+  INST_CMP,     //8
+  INST_JNE,     //9
+  INST_JMP,     //10
+}op_t;
+*/
+
+static void build_trie(){
+  // int inst_nums = 11;
+  char* inst_str[13] = {
+    "mov",
+    "movq",
+    "push",
+    "pop",
+    "leaveq",
+    "callq",
+    "retq",
+    "ret",
+    "add",
+    "sub",
+    "cmpq",
+    "jne",
+    "jmp",
+  };
+  int value[13] = {
+    0,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+  };
+
+  for (int i = 0; i<13;i++){
+    trie_insert(inst_str[i], value[i]);
+  }
+  
+}
+
 static void parse_instruction(const char* str, inst_t *inst, core_t *cr){
+  char op_str[64] = {'\0'};
+  int op_len = 0;
+  char src_str[64] = {'\0'};
+  int src_len = 0;
+  char dst_str[64] = {'\0'};
+  int dst_len = 0;
+
+  char c;
+  int count_parentheses = 0;
+  int state = 0;
+
+  for(int i = 0;i<strlen(str);i++){
+    c = str[i];
+    if(c == '(' || c == ')'){
+      count_parentheses ++;
+    }
+
+    //state transfer
+    if(state == 0 && c != ' '){
+      state = 1;
+    }else if(state == 1 && c == ' '){
+      state = 2;
+      continue;
+    }else if(state == 2 && c != ' '){
+      state = 3;
+      
+    }else if(state == 3 && c == ',' && (count_parentheses == 0||count_parentheses == 2)){
+      state = 4;
+      continue;
+    }else if(state == 4 && c != ' '&& c != ','){
+      state = 5;
+      
+    }else if(state == 5 && c == ' '){
+      state = 6;
+      continue;
+    }
+
+
+    if(state == 1){
+      op_str[op_len] = c;
+      op_len++;
+      continue;
+    }else if(state == 3){
+      src_str[src_len] = c;
+      src_len++;
+      continue;
+    }else if(state == 5){
+      dst_str[dst_len] = c;
+      dst_len++;
+      continue;
+    }
+
+
+  
+  } //end for
+
+
+  //op_str , src_str, dst_str
+
+  parse_operand(src_str, &inst->src, cr);
+  parse_operand(dst_str, &inst->dst, cr);
+
+
+
+  
+  //better done by trie tree   前缀树 / 字典树
+  build_trie();
+  inst->op = trie_search(op_str);
+
+  debug_printf(DEBUG_PARSEINST, "[%s (%d)] [%s (%d)]  [%s (%d)]\n", 
+  op_str, inst->op, src_str, inst->src.type, dst_str, inst->dst.type);
+}
+
+void TestParseInstruction(){
+  ACTIVE_CORE = 0x0;
+  core_t *ac = (core_t *)&cores[ACTIVE_CORE];
+  
+  char assembly[15][MAX_INSTRUCTION_CHAR] = {
+    "push  %rbp",            //0
+    "mov %rsp, %rbp",        //1
+    "mov %rdi, -0x18(%rbp)", //2
+    "mov %rsi, -0x20(%rbp)", //3
+    "mov -0x18(%rbp), %rdx", //4
+    "mov -0x20(%rbp), %rax", //5
+    "add %rdx, %rax",        //6
+    "mov %rax, -0x8(%rbp)",  //7
+    "mov -0x8(%rbp), %rax",  //8
+    "pop %rbp",              //9
+    "retq",                  //10
+    "mov %rdx, %rsi",        //11
+    "mov %rax, %rdi",        //12
+    "callq 0",               //13
+    "mov %rax, -0x8(%rbp)",  //14
+  };
+
+  inst_t inst;
+  for(int i = 0; i< 15;i++){
+    parse_instruction(assembly[i], &inst, ac);
+  }
+
 
 }
+
 
 static void parse_operand(const char* str, od_t *od, core_t *cr){
   //str : assembly code string , e.g. mov $rsp,$rbp
   //od : pointer to the address to store the parsed operand
   //cr : active core processor
+
 
   od->type = EMPTY;
   od->imm = 0;
@@ -250,7 +438,7 @@ static void parse_operand(const char* str, od_t *od, core_t *cr){
         }
         
       }
-    } 
+    } //end for
 
     // imm,reg1,reg2,scal
     if(imm_len>0){
@@ -286,18 +474,10 @@ static void parse_operand(const char* str, od_t *od, core_t *cr){
       }else{
         od->type = imm_len>0?MEM_IMM_REG2_SCAL:MEM_REG2_SCAL;
       }
-    }
+    }    
 
 
-
-
-
-
-    
-  }
-  
-  
-  
+  } // end else
 
 
 }
@@ -309,10 +489,10 @@ void TestPaseingOperand(){
   core_t *ac = (core_t *)&cores[ACTIVE_CORE];
   const char* strs[11] = {
     "$0x123",
-    "%rax",
+    "%rbp",
     "0xabcd",
     "(%rsp)",
-    "0xabcd(%rsp)",
+    "-0x18(%rbp)",
     "(%rsp,%rax)",
     "0xabcd(%rax,%rbx)", //7
     "(,%rax,8)", //8
@@ -331,10 +511,10 @@ void TestPaseingOperand(){
 
     printf("\n%s\n", strs[i]);
     printf("od enum type : %d\n", od.type);
-    printf("od imm: %I64x\n", (uint64_t)od.imm);
-    printf("od reg1:%I64x\n", (uint64_t)od.reg1);
-    printf("od reg2:%I64x\n", (uint64_t)od.reg2);
-    printf("od scal:%I64x\n", (uint64_t)od.scal);
+    printf("od imm: %16lx\n", (uint64_t)od.imm);
+    printf("od reg1:%16lx\n", (uint64_t)od.reg1);
+    printf("od reg2:%16lx\n", (uint64_t)od.reg2);
+    printf("od scal:%16lx\n", (uint64_t)od.scal);
   }
 }
 static void mov_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
@@ -454,6 +634,7 @@ static void pop_handler(od_t *src_od, od_t* dst_od, core_t *cr){
       cr
     );
   }
+  cr->reg.rsp += 8;
   next_rip(cr);
   reset_cflags(cr);
   return;
@@ -470,14 +651,16 @@ static void call_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   //dst : empty
   uint64_t src = decode_operand(src_od);
 
-  cr->reg.rsp -= 8;
+  
   //add rip to stack
   wirte64bits_dram(
     va2pa(cr->reg.rsp, cr),
-    cr->reg.rsp+sizeof(char)*MAX_INSTRUCTION_CHAR,
+    cr->rip+sizeof(char)*MAX_INSTRUCTION_CHAR,
     cr
   );
-  cr->reg.rsp = src;
+
+  cr->reg.rsp -= 8;
+  cr->rip = src;
   reset_cflags(cr);
   return;
 }
@@ -485,22 +668,31 @@ static void call_handler(od_t *src_od, od_t* dst_od, core_t *cr){
 static void ret_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   //src : empty
   //dst : empty
+  cr->reg.rsp += 8;
   uint64_t ret_addr = read64bits_dram(
     va2pa(cr->reg.rsp, cr),
     cr
     );
-  cr->reg.rsp += 8;
+  
   cr->rip = ret_addr;
   reset_cflags(cr);
   return;
 }
 
 static void add_handler(od_t *src_od, od_t* dst_od, core_t *cr){
-  //src : reg
-  //dst : reg
+  
   uint64_t src = decode_operand(src_od);
   uint64_t dst = decode_operand(dst_od);
-  *(uint64_t *)dst += *(uint64_t*)src;
+  uint64_t val = 0;
+  if(src_od->type == REG && dst_od->type == REG){
+    //src : reg
+    //dst : reg
+    val = *(uint64_t *)dst + *(uint64_t*)src;
+
+    //set flags
+  }
+  *(uint64_t*)dst = val;
+  
   next_rip(cr);
   reset_cflags(cr);
   return;
@@ -534,7 +726,7 @@ static void jmp_handler(od_t *src_od, od_t* dst_od, core_t *cr){
 void instruction_cycle(core_t *cr){
   //fetch
   const char *inst_str = (const char*)cr->rip;
-  debug_printf(DEBUG_INSTRUCTIONCYCLE, "%lx      %s\n", (unsigned long)cr->rip, inst_str);
+  debug_printf(DEBUG_INSTRUCTIONCYCLE, "%16lx      %s\n", cr->rip, inst_str);
 
 
   //DECODE : decode the run-time instruction operands
@@ -550,6 +742,12 @@ void instruction_cycle(core_t *cr){
 }
 
 void print_register(core_t *cr){
+  if ((DEBUG_VERBOSE_SET & DEBUG_REGISTERS) == 0x0){
+    return ;
+  }
+
+
+
   printf("rax = %16lx\trbx = %16lx\trcx = %16lx\trdx = %16lx\n", 
   (unsigned long)cr->reg.rax, 
   (unsigned long)cr->reg.rbx, 
@@ -569,18 +767,25 @@ void print_register(core_t *cr){
 }
 
 void print_stack(core_t *cr){
+  if((DEBUG_VERBOSE_SET & DEBUG_PRINTSTACK) == 0x0){
+    return ;
+  }
+
   int n = 10;
   uint64_t* high = (uint64_t *)&pm[va2pa(cr->reg.rsp, cr)];
   high = &high[n];
 
+  uint64_t va = (cr->reg).rsp + n*8;
+
   for(int i = 0; i< 2*n;i++){
     uint64_t *ptr = (uint64_t *)(high-i);
-    printf("%p: %16lx", ptr, (unsigned long)*ptr);
+    printf("0x%16lx: %16lx", va, (uint64_t)*ptr);
 
     if (i==n){
       printf(" <== rsp");
     }
     printf("\n");
+    va -= 8;
   }
 }
 
