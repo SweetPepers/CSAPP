@@ -641,7 +641,18 @@ static void pop_handler(od_t *src_od, od_t* dst_od, core_t *cr){
 }
 
 static void leave_handler(od_t *src_od, od_t* dst_od, core_t *cr){
+  //mov %rbp, %rsp
+  cr->reg.rsp = cr->reg.rbp;
 
+  //pop %rbp
+  cr->reg.rbp = read64bits_dram(
+      va2pa(cr->reg.rsp, cr),
+      cr
+    );
+  cr->reg.rsp += 8;
+
+  reset_cflags(cr);
+  next_rip(cr);
   return ;
 }
 
@@ -683,49 +694,163 @@ static void add_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   
   uint64_t src = decode_operand(src_od);
   uint64_t dst = decode_operand(dst_od);
-  uint64_t val = 0;
+  uint64_t val = *(uint64_t *)dst;
+
+
+  
   if(src_od->type == REG && dst_od->type == REG){
     //src : reg
     //dst : reg
-    val = *(uint64_t *)dst + *(uint64_t*)src;
-
+    src = *(uint64_t*)src;
     //set flags
+  }else if(src_od->type == MEM_IMM && dst_od->type == REG){
+    //src : mem
+    //dst : reg
+    src = read64bits_dram(
+      va2pa(src, cr),
+      cr
+    );
+  }else if(src_od->type == IMM && dst_od->type == REG){
+    //src : imm num
+    //dst : reg
+    src = src;
   }
-  *(uint64_t*)dst = val;
-  
+
+  val += src;
+
+  //set  flags
+  int val_sign = (val >> 63)&0x1;
+  int src_sign = (src >> 63)&0x1;
+  int dst_sign = (*(uint64_t *)dst >> 63)&0x1;  
+  //unsigned overflow
+  cr->flags.CF = (val < src);  
+  cr->flags.ZF = (val == 0);
+  cr->flags.SF = ((val>>63) & 0x1);
+  cr->flags.OF = (val_sign == 1&&src_sign ==0 && dst_sign == 0) ||(val_sign == 0 &&src_sign ==1 && dst_sign == 1);
+
+
+  *(uint64_t *)dst = val;
   next_rip(cr);
-  reset_cflags(cr);
+  // reset_cflags(cr);
   return;
 }
 
 static void sub_handler(od_t *src_od, od_t* dst_od, core_t *cr){
-  //src : reg
-  //dst : reg
+  //dst = dst - src
   uint64_t src = decode_operand(src_od);
   uint64_t dst = decode_operand(dst_od);
-  *(uint64_t *)dst -= *(uint64_t*)src;
+  uint64_t val = *(uint64_t *)dst;
+
+  if(src_od->type == REG && dst_od->type == REG){
+    //src : reg
+    //dst : reg
+    src = *(uint64_t*)src;
+    //set flags
+  }else if(src_od->type == MEM_IMM && dst_od->type == REG){
+    //src : mem
+    //dst : reg
+    src = read64bits_dram(
+      va2pa(src, cr),
+      cr
+    );
+  }else if(src_od->type == IMM && dst_od->type == REG){
+    //src : imm num
+    //dst : reg
+    src = src;
+  }
+  src = ~src+1;  // sign
+  val += src;
+
+  //set  flags
+  int val_sign = (val >> 63)&0x1;
+  int src_sign = (src >> 63)&0x1;
+  int dst_sign = (*(uint64_t *)dst >> 63)&0x1;
+
+  cr->flags.CF = (val < src);  
+  cr->flags.ZF = (val == 0);
+  cr->flags.SF = ((val>>63) & 0x1);
+  cr->flags.OF = (val_sign == 1&&src_sign ==0 && dst_sign == 0) ||(val_sign == 0 &&src_sign ==1 && dst_sign == 1);
+
+
+  *(uint64_t *)dst = val;
   next_rip(cr);
-  reset_cflags(cr);
+  // reset_cflags(cr);
   return;
 }
 
 static void cmp_handler(od_t *src_od, od_t* dst_od, core_t *cr){
+  //dst = dst - src
+  uint64_t src = decode_operand(src_od);
+  uint64_t dst = decode_operand(dst_od);
+  uint64_t val = 0;
+  if(src_od->type == IMM && dst_od->type == MEM_IMM_REG){
+    //src : imm
+    //dst : mem_imm
+    src = ~src+1;
+    dst = read64bits_dram(va2pa(dst, cr), cr);
+    val = dst + src;
+    //set flags
+  }
+  // }else if(src_od->type == MEM_IMM && dst_od->type == REG){
+  //   //src : mem
+  //   //dst : reg
+  //   src = read64bits_dram(
+  //     va2pa(src, cr),
+  //     cr
+  //   );
+  // }else if(src_od->type == IMM && dst_od->type == REG){
+  //   //src : imm num
+  //   //dst : reg
+  //   src = src;
+  // }
 
+  //set  flags
+  int val_sign = (val >> 63)&0x1;
+  int src_sign = (src >> 63)&0x1;
+  int dst_sign = (dst >> 63)&0x1;
+
+  cr->flags.CF = (val < src);  
+  cr->flags.ZF = (val == 0);
+  cr->flags.SF = ((val>>63) & 0x1);
+  cr->flags.OF = (val_sign == 1&&src_sign ==0 && dst_sign == 0) ||(val_sign == 0 &&src_sign ==1 && dst_sign == 1);
+
+
+  // *(uint64_t *)dst = val;
+  next_rip(cr);
+  // reset_cflags(cr);
+  return;
 }
 
 static void jne_handler(od_t *src_od, od_t* dst_od, core_t *cr){
+  uint64_t src = decode_operand(src_od);
+  // uint64_t dst = decode_operand(dst_od);
+  // if(src_od->type == IMM){
+  //reason  $  so src is not a imm, program regard it as mem_imm
+  // src_od->type = 3(MEM_IMM)
 
+  if(cr->flags.ZF != 1){
+    //last instruction val != 0
+    //jump
+    cr->rip = src;
+  }
+  next_rip(cr);
+  reset_cflags(cr);
 }
 
 
 static void jmp_handler(od_t *src_od, od_t* dst_od, core_t *cr){
-
+  uint64_t src = decode_operand(src_od);
+  cr->rip = src;
+  reset_cflags(cr);
 }
 
 
 void instruction_cycle(core_t *cr){
   //fetch
-  const char *inst_str = (const char*)cr->rip;
+  // const char *inst_str = (const char*)cr->rip;
+  char inst_str[MAX_INSTRUCTION_CHAR+10];
+  readinst_dram(va2pa(cr->rip, cr),inst_str, cr);
+
   debug_printf(DEBUG_INSTRUCTIONCYCLE, "%16lx      %s\n", cr->rip, inst_str);
 
 
