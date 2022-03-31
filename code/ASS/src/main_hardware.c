@@ -26,7 +26,7 @@ int main(){
   // TestParseInstruction();
   // TestPaseingOperand();
   // TestString2Uint();
-  // TestAddFunctionCallAndComputation();
+  TestAddFunctionCallAndComputation();
   TestSumFunctionCallAndComputation();
   return 0;
 }
@@ -63,8 +63,8 @@ static void TestAddFunctionCallAndComputation(){
   ac->reg.rdx = 0x0;
   ac->reg.rsi = 0x0;
   ac->reg.rdi = 0x0;
-  ac->reg.rbp = 0x0;
-  ac->reg.rsp = 0x0;
+  ac->reg.rbp = 0x0;  
+  ac->reg.rsp = 0x7ffffffee220;  //why don't wrok ?????????
 
   ac->flags.__flag_values = 0;
 
@@ -75,7 +75,7 @@ static void TestAddFunctionCallAndComputation(){
   wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
 
   char assembly[15][MAX_INSTRUCTION_CHAR] ={
-    "push  %rbp",            //0
+    "push    %rbp",          //0    0x00400000
     "mov %rsp, %rbp",        //1
     "mov %rdi, -0x18(%rbp)", //2
     "mov %rsi, -0x20(%rbp)", //3
@@ -88,19 +88,24 @@ static void TestAddFunctionCallAndComputation(){
     "retq",                  //10
     "mov %rdx, %rsi",        //11
     "mov %rax, %rdi",        //12
-    "callq 0",               //13
+    "callq 0x00400000",      //13
     "mov %rax, -0x8(%rbp)",  //14
   };
 
   
 
-  ac->rip = (uint64_t)&assembly[11];
 
-  //地址是大写的啊  转化还得额外判断
-  sprintf(assembly[13], "callq $%p", &assembly[0]);
+  for(int i = 0;i<15;i++){
+    // printf("%d : %s\n", i, assembly[i]);
+    writeinst_dram(va2pa(i*0x40+0x00400000, ac), assembly[i], ac);
+  }
+
+  // ac->rip = (uint64_t)&assembly[11];
+  ac->rip = MAX_INSTRUCTION_CHAR * sizeof(char) *11 +0x00400000;
 
   printf("begin\n");
   int time = 0;
+
   while(time < 15){
     instruction_cycle(ac);
     print_register(ac);

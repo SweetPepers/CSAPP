@@ -520,8 +520,8 @@ void TestPaseingOperand(){
 static void mov_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
 static void push_handler         (od_t *src_od, od_t* dst_od, core_t *cr);
 static void pop_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
-static void leave_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
-static void call_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
+static void leave_handler        (od_t *src_od, od_t* dst_od, core_t *cr);
+static void call_handler         (od_t *src_od, od_t* dst_od, core_t *cr);
 static void ret_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
 static void add_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
 static void sub_handler          (od_t *src_od, od_t* dst_od, core_t *cr);
@@ -870,8 +870,6 @@ void print_register(core_t *cr){
   if ((DEBUG_VERBOSE_SET & DEBUG_REGISTERS) == 0x0){
     return ;
   }
-
-
 
   printf("rax = %16lx\trbx = %16lx\trcx = %16lx\trdx = %16lx\n", 
   (unsigned long)cr->reg.rax, 

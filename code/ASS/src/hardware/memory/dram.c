@@ -3,6 +3,7 @@
 #include "headers/common.h"
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 #define SRAM_CACHE_SRTTING 0  //是否读写
 
@@ -51,6 +52,7 @@ void readinst_dram(uint64_t paddr, char *buf, core_t *cr){
 
 //wirite buf -> paddr
 void writeinst_dram(uint64_t paddr, const char *str, core_t *cr){
+  
   int len = strlen(str);
   assert(len < MAX_INSTRUCTION_CHAR);
 
