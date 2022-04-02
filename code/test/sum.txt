@@ -1,0 +1,97 @@
+
+sum.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <sum>:
+endbr64 
+push   %rbp
+mov    %rsp,%rbp
+mov    %rdi,-0x18(%rbp)
+mov    %rsi,-0x20(%rbp)
+movq   $0x0,-0x8(%rbp)
+
+movq   $0x0,-0x10(%rbp)
+
+jmp    41 <sum+0x41>
+mov    -0x10(%rbp),%rax
+lea    0x0(,%rax,8),%rdx
+
+mov    -0x18(%rbp),%rax
+add    %rdx,%rax
+mov    (%rax),%rax
+add    %rax,-0x8(%rbp)
+addq   $0x1,-0x10(%rbp)
+mov    -0x10(%rbp),%rax
+cmp    -0x20(%rbp),%rax
+jb     22 <sum+0x22>
+mov    0x0(%rip),%rdx        
+mov    -0x8(%rbp),%rax
+add    %rdx,%rax
+pop    %rbp
+retq   
+
+Disassembly of section .comment:
+
+0000000000000000 <.comment>:
+add    %al,0x43(%rdi)
+rex.XB cmp (%r8),%spl
+sub    %dl,0x62(%rbp)
+jne    79 <sum+0x79>
+je     82 <sum+0x82>
+and    %bh,(%rcx)
+xor    %cs:(%rsi),%ebp
+xor    %ch,0x62753031(%rip)        
+jne    88 <sum+0x88>
+je     91 <sum+0x91>
+xor    (%rcx),%ch
+and    %bh,(%rcx)
+xor    %cs:(%rsi),%ebp
+xor    %al,(%rax)
+
+Disassembly of section .note.gnu.property:
+
+0000000000000000 <.note.gnu.property>:
+add    $0x0,%al
+add    %al,(%rax)
+adc    %al,(%rax)
+add    %al,(%rax)
+add    $0x47000000,%eax
+rex.WRX push %rbp
+add    %al,(%rdx)
+add    %al,(%rax)
+rolb   $0x0,(%rax,%rax,1)
+add    %al,(%rbx)
+add    %al,(%rax)
+add    %al,(%rax)
+add    %al,(%rax)
+
+
+Disassembly of section .eh_frame:
+
+0000000000000000 <.eh_frame>:
+adc    $0x0,%al
+add    %al,(%rax)
+add    %al,(%rax)
+add    %al,(%rax)
+add    %edi,0x52(%rdx)
+add    %al,(%rcx)
+js     1f <.eh_frame+0x1f>
+add    %ebx,(%rbx)
+or     $0x7,%al
+or     %dl,0x1c000001(%rax)
+add    %al,(%rax)
+add    %bl,(%rax,%rax,1)
+add    %al,(%rax)
+add    %al,(%rax)
+add    %al,(%rax)
+pop    %rbx
+add    %al,(%rax)
+add    %al,(%rax)
+rex.RB (bad) 
+adc    %al,0x60d4302(%rsi)
+add    0xc(%rdx),%dl
+(bad)  
+or     %al,(%rax)
+
