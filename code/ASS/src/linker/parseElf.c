@@ -78,7 +78,7 @@ static void parse_sh(char *str, sh_entry_t *sh){
   sh->sh_addr = string2uint(cols[1]);
   sh->sh_offset = string2uint(cols[2]);
   sh->sh_size = string2uint(cols[3]);
-
+  
   free_table_entry(cols, num_cols);
 
 }
@@ -105,9 +105,9 @@ static void parse_symtab(char *str, st_entry_t *ste){
   strcpy(ste->st_name, cols[0]);
   if(strcmp(cols[1],"STB_LOCAL") == 0){
     ste->bind = STB_LOACL;
-  }else if(strcmp(cols[1], "STB_GLOBAL")){
+  }else if(strcmp(cols[1], "STB_GLOBAL") == 0){
     ste->bind = STB_GLOBAL;
-  }else if(strcmp(cols[1], "STB_WEAK")){
+  }else if(strcmp(cols[1], "STB_WEAK") == 0){
     ste->bind = STB_WEAK;
   }else{
     printf("symbol bind is neither LOCAL, GOLBAL, nor WEAK");
@@ -210,9 +210,55 @@ static int read_elf(const char *filename, uint64_t bufaddr){
   return line_counter;
 }
 
+static void parse_relocation(char *str, rl_entry_t *rte){
+  // 4,7,R_X86_64_PC32,0,-4
+  char **cols;
+  int num_cols = parse_table_entry(str,&cols);
+  assert(num_cols == 5);
+  assert(rte != NULL);
+
+  //row, clo
+  rte->r_row = string2uint(cols[0]);
+  rte->r_col = string2uint(cols[1]);
+
+  //type
+  if(strcmp(cols[2],"R_X86_64_32") == 0){
+    rte->type = R_X86_64_32;
+  }else if(strcmp(cols[2], "R_X86_64_PC32") == 0){
+    rte->type = R_X86_64_PC32;
+  }else if(strcmp(cols[2], "R_X86_64_PLT32") == 0){
+    rte->type = R_X86_64_PLT32;
+  }else{
+    printf("relocation type is neither R_X86_64_32, R_X86_64_PC32 nor R_X86_64_PLT32\n");
+    exit(1);
+  }
+  
+  //sym
+  rte->sym = string2uint(cols[3]);
+  //r_addend   int64_t
+  uint64_t bitmap = string2uint(cols[4]);
+  rte->r_addend = *(int64_t *)&bitmap;
+
+  free_table_entry(cols, num_cols);
+}
+
+static void printf_relocation_entry(rl_entry_t *rte){
+  debug_printf(DEBUG_LINKER, "%ld\t%ld\t%d\t%x\t%d\n", 
+    rte->r_row,
+    rte->r_col,
+    rte->type,
+    rte->sym,
+    rte->r_addend
+  );
+}
+
 
 void parse_elf(char* filename, elf_t *elf){
   assert(elf!=NULL);
+  sh_entry_t *rtext_sh = NULL;
+  sh_entry_t *rdata_sh = NULL;
+  
+
   int line_count = read_elf(filename, (uint64_t)&(elf->buffer));
   for (int i = 0; i<line_count;i++){
     printf("[%d]\t%s\n", i, elf->buffer[i]);
@@ -233,12 +279,18 @@ void parse_elf(char* filename, elf_t *elf){
       //.symtab,0x0,26,2
       // this is the section header for symbol table
       symtab_sh  = &(elf->sht[i]);
+    }else if(strcmp(elf->sht[i].sh_name, ".rel.text") == 0){
+      //
+      rtext_sh = &(elf->sht[i]);
+    }else if(strcmp(elf->sht[i].sh_name, ".rel.data" ) == 0){
+      rdata_sh = &(elf->sht[i]);
     }
   }
 
   assert(symtab_sh != NULL);
 
   //parse symtab
+  elf->sht_count = string2uint(elf->buffer[1]);
   elf->symt_count = symtab_sh->sh_size;
   elf->symt = malloc(elf->symt_count*sizeof(st_entry_t));
   for(int j = 0; j<symtab_sh->sh_size;j++){
@@ -247,8 +299,47 @@ void parse_elf(char* filename, elf_t *elf){
     print_symtab_entry(&(elf->symt[j]));
   }
 
-}
 
+
+
+  //parse relocation table
+  //.rel.text
+  if(rtext_sh != NULL){
+    elf->reltext_count = rtext_sh->sh_size;
+    elf->reltext = malloc(elf->reltext_count*sizeof(rl_entry_t));
+    for(int i = 0; i<rtext_sh->sh_size;i++){
+      parse_relocation(
+        elf->buffer[i+rtext_sh->sh_offset],
+        &(elf->reltext[i]) 
+      );
+      int st = elf->reltext[i].sym;
+      assert(0 <= st && st < elf->symt_count);
+      printf_relocation_entry(&(elf->reltext[i]));
+    }
+  }else{
+    elf->reltext_count = 0;
+    elf->reltext = NULL;
+  }
+
+  //.rel.data
+  if(rdata_sh != NULL){
+    elf->reldata_count = rdata_sh->sh_size;
+    elf->reldata = malloc(elf->reldata_count*sizeof(rl_entry_t));
+    for(int i = 0; i<rdata_sh->sh_size;i++){
+      parse_relocation(
+        elf->buffer[i+rdata_sh->sh_offset],
+        &(elf->reldata[i]) 
+      );
+      int st = elf->reldata[i].sym;
+      assert(0 <= st && st < elf->symt_count);
+      printf_relocation_entry(&(elf->reldata[i]));
+    }
+  }else{
+    elf->reldata_count = 0;
+    elf->reldata = NULL;
+  }
+
+}
 
 void free_elf(elf_t *elf){
   assert(elf != NULL);

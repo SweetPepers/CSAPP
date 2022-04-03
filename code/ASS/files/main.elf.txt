@@ -1,0 +1,57 @@
+// unsigned long long sum(unsigned long long *a, unsigned long long n);
+// unsigned long long array[2] = {0x12340000, 0xabcd};
+// unsigned long long bias = 0xf00000000;
+
+// unsigned long long main(){
+//   unsigned long long val = sum(array, 2);
+//   return val;
+// }
+
+//link process:
+//gcc -c main.c -o mian.o
+//gcc -c sum.c -o sum.o
+//ld mian.o sum.o -e main -o program
+
+//count of effective lines
+25
+
+
+//count of section header table lines
+4
+
+//begin of section header table 
+//sh_name,sh_addr,sh_offset,sh_size
+.text,0x0,6,10   //2
+.data,0x0,16,3
+.symtab,0x0,19,4
+.rel.text,0x0,23,2
+
+//.text section
+push   %rbp   //6
+mov    %rsp,%rbp
+sub    $0x10,%rsp
+mov    $0x2,%esi
+lea    0x0000000000000000(%rip),%rdi
+callq  0x0000000000000000 //<main+0x1d>
+mov    %rax,-0x8(%rbp)
+mov    -0x8(%rbp),%rax
+leaveq 
+retq   
+
+//.data  
+0x0000000012340000 //16
+0x000000000000abcd
+0x0000000f00000000
+
+
+//.symtab  
+//st_name,bind,type,st_shndex,st_value,st_size  
+array,STB_GLOBAL,STT_OBJECT,.data,0,2  //19
+bias,STB_GLOBAL,STT_OBJECT,.data,2,1
+main,STB_GLOBAL,STT_FUNC,.text,0,10
+sum,STB_GLOBAL,STT_NOTYPE,SHN_UNDEF,0,0
+
+//.rel.text
+//r_row,r_col,type,sym,r_addend  
+4,7,R_X86_64_PC32,0,-4  //array  //23 why can't follow string in the end?
+5,7,R_X86_64_PLT32,3,-4

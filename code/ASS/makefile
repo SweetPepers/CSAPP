@@ -30,7 +30,7 @@ hardware:
 
 .PHONY: link
 link:
-	$(CC) $(CFLASS) -I $(SRC_DIR) $(COMMON) $(TEST_EFL) $(SRC_DIR)/linker/parseElf.c -o ./src/bin/test_elf
+	$(CC) $(CFLASS) -I $(SRC_DIR) $(COMMON) $(TEST_EFL) $(SRC_DIR)/linker/parseElf.c $(SRC_DIR)/linker/staticlink.c -o ./src/bin/test_elf
 	./src/bin/test_elf
 
 

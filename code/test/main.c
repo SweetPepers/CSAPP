@@ -6,6 +6,7 @@ unsigned long long array[2] = {0x12340000, 0xabcd};
 unsigned long long bias = 0xf00000000;
 
 //global, function, .text
-void main(){
+unsigned long long main(){
   unsigned long long val = sum(array, 2);
+  return val;
 }

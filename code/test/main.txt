@@ -1,0 +1,100 @@
+
+main.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <main>:
+endbr64 
+push   %rbp
+mov    %rsp,%rbp
+sub    $0x10,%rsp
+mov    $0x2,%esi
+lea    0x0(%rip),%rdi        # 18 <main+0x18>
+callq  1d <main+0x1d>
+mov    %rax,-0x8(%rbp)
+mov    -0x8(%rbp),%rax
+leaveq 
+retq   
+
+Disassembly of section .data:
+
+0000000000000000 <array>:
+add    %al,(%rax)
+xor    $0x12,%al
+add    %al,(%rax)
+add    %al,(%rax)
+int    $0xab
+add    %al,(%rax)
+add    %al,(%rax)
+...
+
+0000000000000010 <bias>:
+add    %al,(%rax)
+add    %al,(%rax)
+sldt   (%rax)
+...
+
+Disassembly of section .comment:
+
+0000000000000000 <.comment>:
+add    %al,0x43(%rdi)
+rex.XB cmp (%r8),%spl
+sub    %dl,0x62(%rbp)
+jne    79 <bias+0x69>
+je     82 <bias+0x72>
+and    %bh,(%rcx)
+xor    %cs:(%rsi),%ebp
+xor    %ch,0x62753031(%rip)        # 62753049 <bias+0x62753039>
+jne    88 <bias+0x78>
+je     91 <bias+0x81>
+xor    (%rcx),%ch
+and    %bh,(%rcx)
+xor    %cs:(%rsi),%ebp
+xor    %al,(%rax)
+
+Disassembly of section .note.gnu.property:
+
+0000000000000000 <.note.gnu.property>:
+add    $0x0,%al
+add    %al,(%rax)
+adc    %al,(%rax)
+add    %al,(%rax)
+add    $0x47000000,%eax
+rex.WRX push %rbp
+add    %al,(%rdx)
+add    %al,(%rax)
+rolb   $0x0,(%rax,%rax,1)
+add    %al,(%rbx)
+add    %al,(%rax)
+add    %al,(%rax)
+add    %al,(%rax)
+...
+
+Disassembly of section .eh_frame:
+
+0000000000000000 <.eh_frame>:
+adc    $0x0,%al
+add    %al,(%rax)
+add    %al,(%rax)
+add    %al,(%rax)
+add    %edi,0x52(%rdx)
+add    %al,(%rcx)
+js     1f <.eh_frame+0x1f>
+add    %ebx,(%rbx)
+or     $0x7,%al
+or     %dl,0x1c000001(%rax)
+add    %al,(%rax)
+add    %bl,(%rax,%rax,1)
+add    %al,(%rax)
+add    %al,(%rax)
+add    %al,(%rax)
+(bad)  
+add    %al,(%rax)
+add    %al,(%rax)
+rex.RB (bad) 
+adc    %al,0x60d4302(%rsi)
+pop    %rsi
+or     $0x7,%al
+or     %al,(%rax)
+...
