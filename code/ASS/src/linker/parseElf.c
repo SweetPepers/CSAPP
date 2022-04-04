@@ -345,3 +345,22 @@ void free_elf(elf_t *elf){
   assert(elf != NULL);
   free(elf->sht);
 }
+
+void write_eof(const char* filename, elf_t *eof){
+  FILE *fp;
+  fp = fopen(filename, "w");
+  if(fp == NULL){
+    debug_printf(DEBUG_LINKER, "unable to open file %s\n", filename);
+    exit(1);
+  }
+
+  for (int i = 0; i < eof->line_count; i++)
+  {
+    fprintf(fp, "%s\n", eof->buffer[i]);
+  }
+  fclose(fp);
+  
+  //free hash table 
+  //hashtable_free(link_constan_disk);
+  
+}

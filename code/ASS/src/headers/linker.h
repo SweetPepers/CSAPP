@@ -99,4 +99,5 @@ void free_elf(elf_t *elf);
 
 void link_elf(elf_t **srcs, int num_srcs, elf_t *dst);
 
+void write_eof(const char* filename, elf_t *eof);
 #endif

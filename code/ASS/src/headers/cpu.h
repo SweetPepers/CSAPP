@@ -185,5 +185,4 @@ void instruction_cycle(core_t *cr);
 //translate virtual address to pa in MMU
 //each core has a MMU
 uint64_t va2pa(uint64_t paddr, core_t *cr);
-
 #endif

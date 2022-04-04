@@ -5,6 +5,7 @@
 #include <string.h>
 #include "headers/linker.h"
 #include "headers/common.h"
+#include "headers/instruction.h"
 #include "headers/cpu.h"
 
 
@@ -26,21 +27,20 @@ static void merge_section(elf_t **srcs, int num_srcs, elf_t *dst, smap_t *smap_t
 */
 static void relocation_processing(elf_t **srcs, int num_srcs, elf_t *dst, smap_t *smap_table, int *smap_count);
 
-static void R_X86_64_32_handler(elf_t *dst, int row_referencing, int col_referencing, 
+static void R_X86_64_32_handler(elf_t *dst, sh_entry_t *sh, int row_referencing, int col_referencing, 
   int addend,st_entry_t * sym_referenced);
-static void R_X86_64_PC32_handler(elf_t *dst, int row_referencing, int col_referencing, 
-  int addend,st_entry_t * sym_referenced);
-static void R_X86_64_PLT32_handler(elf_t *dst, int row_referencing, int col_referencing, 
+static void R_X86_64_PC32_handler(elf_t *dst, sh_entry_t *sh, int row_referencing, int col_referencing, 
   int addend,st_entry_t * sym_referenced);
 
 
-typedef void(*rela_handler_t)(elf_t *dst, int row_referencing, int col_referencing, 
+typedef void(*rela_handler_t)(elf_t *dst, sh_entry_t *sh, int row_referencing, int col_referencing, 
   int addend,st_entry_t * sym_referenced);
 
 static rela_handler_t handler_table[3] = {
   &R_X86_64_32_handler,     //1
   &R_X86_64_PC32_handler,   //2
-  &R_X86_64_PLT32_handler,  //3
+  &R_X86_64_PC32_handler,  //3
+  //PC32 is same as PLT32
 };
 
 static const char *get_stb_string(st_bind_t bind);
@@ -79,7 +79,6 @@ void link_elf(elf_t **srcs, int num_srcs, elf_t *dst){
   dst->symt = malloc(dst->symt_count * sizeof(st_entry_t));
 
   // merge the symbol content from ELF src into dst sections
-  printf("\n\nmergeing the sections:\n");
   merge_section(srcs,num_srcs, dst,(smap_t *)&smap_table,&smap_count);
   printf("-------------------------------\n");
   printf("after mergeing the sections:\n");
@@ -88,7 +87,6 @@ void link_elf(elf_t **srcs, int num_srcs, elf_t *dst){
   }
 
 
-  exit(0);
   //update buffer:relocate the referencing  in buffer
   //relocating: update the relocation entries from ELF files into EOF buffer
   relocation_processing(srcs,num_srcs, dst,(smap_t *)&smap_table,&smap_count);
@@ -460,36 +458,220 @@ static void merge_section(elf_t **srcs, int num_srcs, elf_t *dst, smap_t *smap_t
           }
         }
       }
-
-
     }
-
-
-
-
   }
 }
 
 
 static void relocation_processing(elf_t **srcs, int num_srcs, elf_t *dst, smap_t *smap_table, int *smap_count){
+  
+  sh_entry_t *eof_text_sh = NULL;
+  sh_entry_t *eof_data_sh = NULL;
+
+
+  for(int i = 0;i<dst->sht_count;i++){
+    if(strcmp(dst->sht[i].sh_name, ".text") == 0){
+      eof_text_sh = &(dst->sht[i]);
+    }
+    if(strcmp(dst->sht[i].sh_name, ".data") == 0){
+      eof_data_sh = &(dst->sht[i]);
+    }
+  }
+  
+  
+  for(int i = 0; i<num_srcs;i++){
+    elf_t *elf = srcs[i];
+/*
+    //find section hearder  .text   .data
+    sh_entry_t *text_sh = NULL;
+    sh_entry_t *data_sh = NULL;
+    for(int j = 0;j<elf->sht_count;j++){
+       if(strcmp(elf->sht[j].sh_name, ".text") == 0){
+         text_sh = &(elf->sht[j]);
+       }else  if(strcmp(elf->sht[j].sh_name, ".data") == 0){
+         data_sh = &(elf->sht[j]);
+       }
+    }
+*/
+    //.rel.text
+    for(int j=0;j<elf->reltext_count;j++){
+      rl_entry_t *r = &elf->reltext[j];
+
+      //search the referencing symbol
+      for(int k = 0;k<elf->symt_count;k++){
+        st_entry_t *sym = &elf->symt[k];
+
+        if(strcmp(sym->st_shndex, ".text") == 0){
+          //must be referenced by a .text symbol
+          //check if this symbol is the one referencing 
+
+          int sym_text_start = sym->st_value;
+          int sym_text_end = sym->st_value+sym->st_size;
+
+          if(sym_text_start<= r->r_row && r->r_row <= sym_text_end){
+            //symt[k] is referencing reltext[j].sym
+            //search the smap table to find the EOF location
+            int smap_found = 0;
+            for(int t = 0;t<*smap_count;t++){
+              if(smap_table[t].src == sym){
+                smap_found = 1;
+                //update the new referencing position in EOF
+                st_entry_t *eof_referencing  = smap_table[t].dst;
+                //search the being referenced symbol
+                for(int u =0;u<*smap_count;u++){
+                  //TODO EOF symbal name/
+                  //get the referencd symbol name
+
+                  if(
+                    strcmp(elf->symt[r->sym].st_name, smap_table[u].dst->st_name) == 0 &&
+                    (smap_table[u].dst->bind == STB_GLOBAL)
+                  ){
+                    st_entry_t *eof_referenced = smap_table[u].dst;
+                    (handler_table[(int)r->type])(
+                      dst, eof_text_sh,
+                      r->r_row-sym->st_value+eof_referencing->st_value,
+                      r->r_col,
+                      r->r_addend,
+                      eof_referenced);
+                  }
+                }
+              }
+            }
+            //referencing must be in smap_table
+            assert(smap_found == 1);
+          }
+        }
+      }
+    }  //end for .rel.text
+
+
+    //.rel.data
+    for(int j=0;j<elf->reldata_count;j++){
+      rl_entry_t *r = &elf->reldata[j];
+
+      //search the referencing symbol
+      for(int k = 0;k<elf->symt_count;k++){
+        st_entry_t *sym = &elf->symt[k];
+
+        if(strcmp(sym->st_shndex, ".data") == 0){
+          //must be referenced by a .data symbol
+          //check if this symbol is the one referencing 
+
+          int sym_data_start = sym->st_value;
+          int sym_data_end = sym->st_value+sym->st_size;
+
+          if(sym_data_start<= r->r_row && r->r_row <= sym_data_end){
+            //symt[k] is referencing reldata[j].sym
+            //search the smap table to find the EOF location
+            int smap_found = 0;
+            for(int t = 0;t<*smap_count;t++){
+              if(smap_table[t].src == sym){
+                smap_found = 1;
+                //update the new referencing position in EOF
+                st_entry_t *eof_referencing  = smap_table[t].dst;
+                //search the being referenced symbol
+                for(int u =0;u<*smap_count;u++){
+                  //TODO EOF symbal name/
+                  //get the referencd symbol name
+
+                  if(
+                    strcmp(elf->symt[r->sym].st_name, smap_table[u].dst->st_name) == 0 &&
+                    (smap_table[u].dst->bind == STB_GLOBAL)
+                  ){
+                    st_entry_t *eof_referenced = smap_table[u].dst;
+                    (handler_table[(int)r->type])(
+                      dst, eof_data_sh,
+                      r->r_row-sym->st_value+eof_referencing->st_value,
+                      r->r_col,
+                      r->r_addend,
+                      eof_referenced);
+                  }
+                }
+              }
+            }
+            //referencing must be in smap_table
+            assert(smap_found == 1);
+          }
+       }
+      }
+    }
+  }
+  
+
   return ;
 }
+static uint64_t get_symbol_runtime_address(elf_t *dst, st_entry_t *sym){
+
+  uint64_t text_base = 0x00400000;
+  uint64_t rodata_base = 0;
+  uint64_t data_base = 0;
+  int inst_size = sizeof(inst_t);
+  int data_size = sizeof(uint64_t);
+
+  //must visit in .text .rodata .data order
+  sh_entry_t *sht = dst->sht;
+  for(int i = 0;i<dst->sht_count;i++){
+    if(strcmp(sht[i].sh_name, ".text") == 0){
+
+      rodata_base = text_base +sht[i].sh_size*inst_size;
+      data_base = rodata_base;
+    }else if(strcmp(sht[i].sh_name, ".rodata") == 0){
+      data_base = rodata_base + sht[i].sh_size*data_size;
+    }
+  }
+
+ 
+  //check this symbol's section
+  if(strcmp(sym->st_shndex, ".text") == 0){
+    return text_base + inst_size * sym->st_value;
+
+  }else if(strcmp(sym->st_shndex, ".rodata") == 0){
+    return rodata_base + sym->st_value*data_size;
+  
+  }else if(strcmp(sym->st_shndex, ".data") == 0){
+    return data_base + sym->st_value*data_size;
+  }
+
+  return 0xffffffffffffffff;
+}
+
+static void write_relocation(char *dst, uint64_t val){
+   char temp[20];
+
+    //sprintf will add '\0' at end
+    sprintf(temp, "0x%016lx", val); 
 
 
-static void R_X86_64_32_handler(elf_t *dst, int row_referencing, int col_referencing, 
-  int addend,st_entry_t * sym_referenced){
+    for(int i = 0;i<18;i++){
+      dst[i] = temp[i];
+    }
+}
+
+static void R_X86_64_32_handler(elf_t *dst, sh_entry_t *sh, int row_referencing, int col_referencing, 
+  int addend, st_entry_t * sym_referenced){
+
+    // printf("row = %d col = %d, sym referenced = %s\n", row_referencing, col_referencing, sym_referenced->st_name);
+    uint64_t  sym_address = get_symbol_runtime_address(dst, sym_referenced);
+    char *s = &dst->buffer[sh->sh_offset+row_referencing][col_referencing];
+    
+    write_relocation(s, sym_address);
 
 }
 
-static void R_X86_64_PC32_handler(elf_t *dst, int row_referencing, int col_referencing, 
+static void R_X86_64_PC32_handler(elf_t *dst, sh_entry_t *sh, int row_referencing, int col_referencing, 
   int addend,st_entry_t * sym_referenced){
+    assert(strcmp(sh->sh_name, ".text") == 0);
 
+
+    // printf("row = %d col = %d, sym referenced = %s\n", row_referencing, col_referencing, sym_referenced->st_name);
+    uint64_t  sym_address = get_symbol_runtime_address(dst, sym_referenced);
+    uint64_t rip_value = 0x000400000+(row_referencing+1) * sizeof(inst_t);
+    char *s = &dst->buffer[sh->sh_offset+row_referencing][col_referencing];
+    
+    write_relocation(s, sym_address- rip_value);
 }
 
-static void R_X86_64_PLT32_handler(elf_t *dst, int row_referencing, int col_referencing, 
-  int addend,st_entry_t * sym_referenced){
 
-}
 
 static const char *get_stb_string(st_bind_t bind){
   char *res = NULL;
