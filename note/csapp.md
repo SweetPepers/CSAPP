@@ -383,3 +383,134 @@ long long a = 2147483648;//y.c
 
 ### 17 链接-引用重定位
 
+### 18 链接完结-动态链接
+
+### 19 链接总结
+
+替换(lambda表达式类似)->编译
+
+
+### 1A  内存问题简介:层次,一致性,虚拟内存
+
+  - cache  
+  - virsual memroy  
+  - interupt
+
+### 1B 内存-cache地址格式
+
+组相联
+三元组
+- ct cache tag    40
+- ci cache index  6
+- co cache offset 6
+
+![](../picture/1Baddress_translation.png)
+
+
+### 1C 内存-LRU缓存:写回,写分配,LRU替换策略
+
+what's PR?
+![](../picture/1Ccacheline状态转换.png)
+
+
+### 1D 内存-矩阵乘法优化,LRU正确性
+
+//TODO : 更新LRU算法, cmu实验材料 比对  
+这节得重现看 
+//TODO : python脚本的实现
+
+
+矩阵乘法 
+matrix[32][32]  
+每一行 计算就是 4*(1miss+7hit) + 4* 8miss = 36miss+28hit
+
+```c
+  for(i = 0;i<32;i++){
+    for(j = 0;j<32;j++){
+      for(k = 0;k<32;k++){
+        C[i][j] = a[i][k]*[k][j];
+      }
+    }
+  }
+
+```
+
+
+$\vec{C_k} = \sum_{i=0}^{31}a_{ik}*\vec{b_k}$
+1/8miss
+```c
+  for(i = 0;i<32;i++){
+    for(k = 0;k<32;k++){
+      for(j = 0;j<32;j++){
+        C[i][j] = a[i][k]*[k][j];
+      }
+    }
+  }
+```
+
+
+### 1E 内存-MESI缓存一致性协议,并行计算的性能
+MESI  
+- exclusive Modified   --DIRTY
+- Exclusive clean      --CLEAN
+- Shared clean         
+  - shared write 
+  - 写回的处理器 S->M
+  - 其他shared处理器 S->INVALID
+- Invalid              --INVALID
+  - 其他 INVALID
+  - 其他 SHRAED/M  也就是访问后出现了shared的状态
+
+|      |   M  |  E  |  S  |  I  |
+| ---  | ---  | --- | --- | --- |
+| M    | X    | X   | X   |  O  |
+| E    | X    | X   | X   |  O  |
+| S    | X    | X   | O   |  O  |
+| I    | O    | O   | O   |  O  |
+
+### 1F 内存-并行中的缓存伪共享 
+
+
+### 20 内存-多级页表,虚拟地址,物理地址
+
+- 1. va2pa %  function
+- 2. hashmap H(va) -> pa
+
+
+pa = va + pa0 - va0(<=>$\triangle PV$)  
+  
+  分段 V0  P0 定义域 D   空间从(2k+1)->3M  
+  问题->碎片 fragment
+  -> 分页 (定长)
+  维护表 (v0,p0)
+
+
+  
+  va2pa 
+  - pa 不越界  %  H  S  P
+  - pa 不冲突     H  S  P
+  - 占用内存小       S  P
+  - locality        S  P
+  - 碎片少           S  P
+  - 映射快              P
+
+
+page table 实现
+
+2^36 个索引  太大了  
+-> 多级页表
+
+```c
+/*
++-------+---------+-------+----------+-------------------+
+| VPN3  |  VPN2   | VPN1  | VPN0     |                   |
++-------+---------+-------+-+--------+     VPO           |
+|  TLBT                     | TLBI   |                   |
++-------------+-----------+----------+-------------------|
+              |          PPN         |    PPO            |
+              +----------------------+----------+--------+
+              |       ct             |      ci  |  co    |    
+              +----------------------+----------+--------+
+*/
+```
+  

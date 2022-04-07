@@ -524,7 +524,7 @@ static void mov_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   else if(src_od->type == REG && dst_od->type >= MEM_IMM){  
     //src : reg
     //dst : mem va
-    wirte64bits_dram(
+    cpu_write64bits_dram(
       va2pa(dst, cr),
       *(uint64_t*)src,
       cr
@@ -536,7 +536,7 @@ static void mov_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   else if(src_od->type >= MEM_IMM && dst_od->type == REG){
     //src : mem va
     //dst : reg
-    *(uint64_t*)dst = read64bits_dram(
+    *(uint64_t*)dst = cpu_read64bits_dram(
       va2pa(src, cr),
       cr
     );  
@@ -564,7 +564,7 @@ static void push_handler(od_t *src_od, od_t* dst_od, core_t *cr){
     //src : reg
     //dst : empty
     cr->reg.rsp -= 8;
-    wirte64bits_dram(
+    cpu_write64bits_dram(
       va2pa(cr->reg.rsp, cr),
       *(uint64_t*)src,
       cr
@@ -579,7 +579,7 @@ static void pop_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   uint64_t src = decode_operand(src_od);
 
   if(src_od->type == REG){
-    *(uint64_t*)src = read64bits_dram(
+    *(uint64_t*)src = cpu_read64bits_dram(
       va2pa(cr->reg.rsp, cr),
       cr
     );
@@ -595,7 +595,7 @@ static void leave_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   cr->reg.rsp = cr->reg.rbp;
 
   //pop %rbp
-  cr->reg.rbp = read64bits_dram(
+  cr->reg.rbp = cpu_read64bits_dram(
       va2pa(cr->reg.rsp, cr),
       cr
     );
@@ -614,7 +614,7 @@ static void call_handler(od_t *src_od, od_t* dst_od, core_t *cr){
 
   
   //add rip to stack
-  wirte64bits_dram(
+  cpu_write64bits_dram(
     va2pa(cr->reg.rsp, cr),
     cr->rip+sizeof(char)*MAX_INSTRUCTION_CHAR,
     cr
@@ -631,7 +631,7 @@ static void ret_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   //src : empty
   //dst : empty
   cr->reg.rsp += 8;
-  uint64_t ret_addr = read64bits_dram(
+  uint64_t ret_addr = cpu_read64bits_dram(
     va2pa(cr->reg.rsp, cr),
     cr
     );
@@ -657,7 +657,7 @@ static void add_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   }else if(src_od->type == MEM_IMM && dst_od->type == REG){
     //src : mem
     //dst : reg
-    src = read64bits_dram(
+    src = cpu_read64bits_dram(
       va2pa(src, cr),
       cr
     );
@@ -700,7 +700,7 @@ static void sub_handler(od_t *src_od, od_t* dst_od, core_t *cr){
   }else if(src_od->type == MEM_IMM && dst_od->type == REG){
     //src : mem
     //dst : reg
-    src = read64bits_dram(
+    src = cpu_read64bits_dram(
       va2pa(src, cr),
       cr
     );
@@ -738,14 +738,14 @@ static void cmp_handler(od_t *src_od, od_t* dst_od, core_t *cr){
     //src : imm
     //dst : mem_imm
     src = ~src+1;
-    dst = read64bits_dram(va2pa(dst, cr), cr);
+    dst = cpu_read64bits_dram(va2pa(dst, cr), cr);
     val = dst + src;
     //set flags
   }
   // }else if(src_od->type == MEM_IMM && dst_od->type == REG){
   //   //src : mem
   //   //dst : reg
-  //   src = read64bits_dram(
+  //   src = cpu_read64bits_dram(
   //     va2pa(src, cr),
   //     cr
   //   );
@@ -800,7 +800,7 @@ void instruction_cycle(core_t *cr){
   //fetch
   // const char *inst_str = (const char*)cr->rip;
   char inst_str[MAX_INSTRUCTION_CHAR+10];
-  readinst_dram(va2pa(cr->rip, cr),inst_str, cr);
+  cpu_readinst_dram(va2pa(cr->rip, cr),inst_str, cr);
 
   debug_printf(DEBUG_INSTRUCTIONCYCLE, "%16lx      %s\n", cr->rip, inst_str);
 
