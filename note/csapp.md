@@ -563,10 +563,8 @@ footer  --  header
 
 ### 29 内存-malloc空闲链表优化 Explicit list
 
-这一节有点乱啊  改不过来了啊 
+这一节有点乱啊  改不过来了啊
 
 explicit list : free list  
 
 ### 2A 内存-malloc的第二种实现,双向环形explicit链表
-
-

@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-
 #ifndef CACHE_SIMULATION_VERIFICATION
 
 #define SRAM_CACHE_TAG_LENGTH (4) //40 in real
@@ -13,11 +12,11 @@
 #endif
 
 #define PHYSICAL_PAGE_OFFSET_LENGTH (12)
-#define PHYSICAL_PAGE_NUMBER_LENGTH (4)   //40 in real
-#define PHYSICAL_ADDRESS_LENGTH (16)      //52 in real
+#define PHYSICAL_PAGE_NUMBER_LENGTH (4) //40 in real
+#define PHYSICAL_ADDRESS_LENGTH (16)    //52 in real
 
 #define VIRTUAL_PAGE_OFFSET_LENGTH (12)
-#define VIRTUAL_PAGE_NUMBER_LENGTH (9)  // 9+9+9+9 = 36
+#define VIRTUAL_PAGE_NUMBER_LENGTH (9) // 9+9+9+9 = 36
 #define VIRTUAL_ADDRESS_LENGTH (48)
 
 #define TLB_CACHE_OFFSET_LENGTH (12)
@@ -37,25 +36,30 @@
 */
 
 //Little Endia
-typedef union{
+typedef union
+{
   uint64_t address_value;
 
-  //low -> high 
+  //low -> high
 
   //physical address: 16
-  union {
+  union
+  {
     uint64_t paddr_value : PHYSICAL_ADDRESS_LENGTH;
-    struct {
+    struct
+    {
       uint64_t ppo : PHYSICAL_PAGE_OFFSET_LENGTH;
       uint64_t ppn : PHYSICAL_PAGE_NUMBER_LENGTH;
     };
   };
 
   //virtual address: 48
-  union {
+  union
+  {
     uint64_t vaddr_value : VIRTUAL_ADDRESS_LENGTH;
-    struct {
-      uint64_t vpo  : VIRTUAL_PAGE_OFFSET_LENGTH;
+    struct
+    {
+      uint64_t vpo : VIRTUAL_PAGE_OFFSET_LENGTH;
       uint64_t vpn4 : VIRTUAL_PAGE_NUMBER_LENGTH;
       uint64_t vpn3 : VIRTUAL_PAGE_NUMBER_LENGTH;
       uint64_t vpn2 : VIRTUAL_PAGE_NUMBER_LENGTH;
@@ -64,21 +68,21 @@ typedef union{
   };
 
   // sram cache : 16
-  struct {  
+  struct
+  {
     uint64_t co : SRAM_CACHE_OFFSET_LENGTH;
     uint64_t ci : SRAM_CACHE_INDEX_LENGTH;
     uint64_t ct : SRAM_CACHE_TAG_LENGTH;
   };
 
-
   //TLB cache 48
-  struct{
-    uint64_t tlbo : TLB_CACHE_OFFSET_LENGTH;  //virtual page offset 
-    uint64_t tlbi : TLB_CACHE_INDEX_LENGTH ;  //TLB set index
-    uint64_t tlbt : TLB_CACHE_TAG_LENGTH;   //TLB line tag 
+  struct
+  {
+    uint64_t tlbo : TLB_CACHE_OFFSET_LENGTH; //virtual page offset
+    uint64_t tlbi : TLB_CACHE_INDEX_LENGTH;  //TLB set index
+    uint64_t tlbt : TLB_CACHE_TAG_LENGTH;    //TLB line tag
   };
-   
-}address_t;
 
+} address_t;
 
 #endif

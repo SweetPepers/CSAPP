@@ -52,14 +52,16 @@ typedef struct
   sram_cacheline_t lines[NUM_CACHE_LINE_PER_SET];
 } sram_cacheset_t;
 
-typedef struct{
+typedef struct
+{
   sram_cacheset_t sets[(1 << SRAM_CACHE_INDEX_LENGTH)];
 } sram_cache_t;
 
-static sram_cache_t cache;  //init to .bss  -> INVALID
+static sram_cache_t cache; //init to .bss  -> INVALID
 
-uint8_t sram_cache_read(uint64_t paddr_value){
-  address_t paddr ={
+uint8_t sram_cache_read(uint64_t paddr_value)
+{
+  address_t paddr = {
       .paddr_value = paddr_value,
   };
 

@@ -1,11 +1,15 @@
-#ifndef INST_GUARD
-#define INST_GUARD
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+// include guards to prevent double declaration of any identifiers 
+// such as types, enums and static variables
+#ifndef INSTRUCTION_GUARD
+#define INSTRUCTION_GUARD
+
 #include <stdint.h>
 
+/*======================================*/
+/*      instruction set architecture    */
+/*======================================*/
 
+// data structures
 
 typedef enum INST_OPERATOR{
   INST_MOV,     //0
@@ -19,23 +23,25 @@ typedef enum INST_OPERATOR{
   INST_CMP,     //8
   INST_JNE,     //9
   INST_JMP,     //10
+  INST_LEAVE,   //11
 }op_t;
 
 
 typedef enum OPERAND_TYPE{
-  EMPTY,                  //0
-  IMM,                    //1
-  REG, 
-  MEM_IMM,                 //3
-  MEM_REG,
-  MEM_IMM_REG,             //5
-  MEM_REG1_REG2,
-  MEM_IMM_REG1_REG2,       //7
-  MEM_REG2_SCAL,
-  MEM_IMM_REG2_SCAL,
-  MEM_REG1_REG2_SCAL,      //10
-  MEM_IMM_REG1_REG2_SCAL   //11
+  OD_EMPTY,                  //0
+  OD_IMM,                    //1
+  OD_REG, 
+  OD_MEM_IMM,                 //3
+  OD_MEM_REG1,
+  OD_MEM_IMM_REG1,             //5
+  OD_MEM_REG1_REG2,
+  OD_MEM_IMM_REG1_REG2,       //7
+  OD_MEM_REG2_SCAL,
+  OD_MEM_IMM_REG2_SCAL,
+  OD_MEM_REG1_REG2_SCAL,      //10
+  OD_MEM_IMM_REG1_REG2_SCAL   //11
 } od_type_t;
+
 
 
 //operand
@@ -56,5 +62,7 @@ typedef struct INSTRUCT_STRUCT{
   od_t src;  
   od_t dst;
 }inst_t;
+
+#define MAX_NUM_INSTRUCTION_CYCLE 100
 
 #endif

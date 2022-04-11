@@ -13,7 +13,8 @@
 
 //disk address counter
 static uint64_t internal_swap_daddr = 0;
-int swap_in(uint64_t daddr, uint64_t ppn){
+int swap_in(uint64_t daddr, uint64_t ppn)
+{
   FILE *fr;
   char filename[128];
   sprintf(filename, "../files/swap/page-%ld.txt", daddr);
@@ -22,16 +23,16 @@ int swap_in(uint64_t daddr, uint64_t ppn){
 
   uint64_t ppn_ppo = ppn << PHYSICAL_PAGE_OFFSET_LENGTH;
   char buf[64] = {'0'};
-  for(int i = 0;i<SWAP_PAGE_FILE_LINES;i++){
+  for (int i = 0; i < SWAP_PAGE_FILE_LINES; i++)
+  {
     char *str = fgets(buf, 64, fr);
-    *(uint64_t *)(&pm[ppn_ppo + i*8]) = string2uint(str);
+    *(uint64_t *)(&pm[ppn_ppo + i * 8]) = string2uint(str);
   }
   fclose(fr);
 }
 
-
-
-int swap_out(uint64_t daddr, uint64_t ppn){
+int swap_out(uint64_t daddr, uint64_t ppn)
+{
   FILE *fw;
   char filename[128];
   sprintf(filename, "../files/swap/page-%ld.txt", daddr);
@@ -39,8 +40,9 @@ int swap_out(uint64_t daddr, uint64_t ppn){
   assert(fw != NULL);
 
   uint64_t ppn_ppo = ppn << PHYSICAL_PAGE_OFFSET_LENGTH;
-  for(int i = 0;i<SWAP_PAGE_FILE_LINES;i++){
-    fprintf(fw, "0x%16lx\n", *(uint64_t *)(&pm[ppn_ppo + i*8]));
+  for (int i = 0; i < SWAP_PAGE_FILE_LINES; i++)
+  {
+    fprintf(fw, "0x%16lx\n", *(uint64_t *)(&pm[ppn_ppo + i * 8]));
   }
   fclose(fw);
 }

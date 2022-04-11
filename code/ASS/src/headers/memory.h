@@ -96,11 +96,11 @@ pd_t page_map[MAX_NUM_PHYSICAL_PAGE];
 
 
 
-uint64_t cpu_read64bits_dram(uint64_t paddr, core_t *cr);
-void cpu_write64bits_dram(uint64_t paddr, uint64_t data, core_t *cr);
+uint64_t cpu_read64bits_dram(uint64_t paddr);
+void cpu_write64bits_dram(uint64_t paddr, uint64_t data);
 
-void cpu_readinst_dram(uint64_t paddr, char *buf, core_t *cr);
-void cpu_writeinst_dram(uint64_t paddr, const char *str, core_t *cr);
+void cpu_readinst_dram(uint64_t paddr, char *buf);
+void cpu_writeinst_dram(uint64_t paddr, const char *str);
 
 
 void bus_read(uint64_t paddr, uint8_t *block);

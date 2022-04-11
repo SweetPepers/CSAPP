@@ -13,12 +13,12 @@ static void TestString2Uint();
 void TestPaseingOperand();
 void TestParseInstruction();
 
-void writeinst_dram(uint64_t paddr, const char *str, core_t *cr);
-void readinst_dram(uint64_t paddr, char *buf, core_t *cr);
+void writeinst_dram(uint64_t paddr, const char *str);
+void readinst_dram(uint64_t paddr, char *buf);
 
 
-void print_register(core_t *cr);
-void print_stack(core_t *cr);
+void print_register();
+void print_stk();
 
 
 
@@ -53,26 +53,24 @@ static void TestString2Uint(){
 }
 
 static void TestAddFunctionCallAndComputation(){
-  ACTIVE_CORE = 0x0;
 
-  core_t *ac = (core_t *)&cores[ACTIVE_CORE];
+  cpu_reg.rax = 0x0;
+  cpu_reg.rbx = 0x0;
+  cpu_reg.rcx = 0x0;
+  cpu_reg.rdx = 0x0;
+  cpu_reg.rsi = 0x0;
+  cpu_reg.rdi = 0x0;
+  cpu_reg.rbp = 0x0;  
+  cpu_reg.rsp = 0x7ffffffee220;  //why don't wrok ?????????
 
-  ac->reg.rax = 0x0;
-  ac->reg.rbx = 0x0;
-  ac->reg.rcx = 0x0;
-  ac->reg.rdx = 0x0;
-  ac->reg.rsi = 0x0;
-  ac->reg.rdi = 0x0;
-  ac->reg.rbp = 0x0;  
-  ac->reg.rsp = 0x7ffffffee220;  //why don't wrok ?????????
+  
+  cpu_flags.__flags_value = 0;
 
-  ac->flags.__flag_values = 0;
-
-  wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
-  wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
-  wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
-  wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
-  wirte64bits_dram(va2pa(0x7ffffffee110, ac), 0x0000000000000000,ac);
+  wirte64bits_dram(va2pa(0x7ffffffee110), 0x0000000000000000);
+  wirte64bits_dram(va2pa(0x7ffffffee110), 0x0000000000000000);
+  wirte64bits_dram(va2pa(0x7ffffffee110), 0x0000000000000000);
+  wirte64bits_dram(va2pa(0x7ffffffee110), 0x0000000000000000);
+  wirte64bits_dram(va2pa(0x7ffffffee110), 0x0000000000000000);
 
   char assembly[15][MAX_INSTRUCTION_CHAR] ={
     "push    %rbp",          //0    0x00400000
@@ -97,33 +95,34 @@ static void TestAddFunctionCallAndComputation(){
 
   for(int i = 0;i<15;i++){
     // printf("%d : %s\n", i, assembly[i]);
-    writeinst_dram(va2pa(i*0x40+0x00400000, ac), assembly[i], ac);
+    writeinst_dram(va2pa(i*0x40+0x00400000), assembly[i]);
   }
 
-  // ac->rip = (uint64_t)&assembly[11];
-  ac->rip = MAX_INSTRUCTION_CHAR * sizeof(char) *11 +0x00400000;
+  // ->rip = (uint64_t)&assembly[11];
+  
+  cpu_pc.rip = MAX_INSTRUCTION_CHAR * sizeof(char) *11 +0x00400000;
 
   printf("begin\n");
   int time = 0;
 
   while(time < 15){
-    instruction_cycle(ac);
-    print_register(ac);
-    print_stack(ac);
+    instruction_cycle();
+    print_register();
+    print_stk();
     time++;
   }
 
 
   //gdb state ret from func
   int match = 1;
-  match = match && (ac->reg.rax == 0x1234abcd);
-  match = match && (ac->reg.rbx == 0x0);
-  match = match && (ac->reg.rcx == 0x8000660);
-  match = match && (ac->reg.rdx == 0x12340000);
-  match = match && (ac->reg.rsi == 0xabcd);
-  match = match && (ac->reg.rdi == 0x12340000);
-  match = match && (ac->reg.rbp == 0x7ffffffee210);
-  match = match && (ac->reg.rsp == 0x7ffffffee1f0);
+  match = match && (cpu_reg.rax == 0x1234abcd);
+  match = match && (cpu_reg.rbx == 0x0);
+  match = match && (cpu_reg.rcx == 0x8000660);
+  match = match && (cpu_reg.rdx == 0x12340000);
+  match = match && (cpu_reg.rsi == 0xabcd);
+  match = match && (cpu_reg.rdi == 0x12340000);
+  match = match && (cpu_reg.rbp == 0x7ffffffee210);
+  match = match && (cpu_reg.rsp == 0x7ffffffee1f0);
 
   if(match == 1){
     printf("register match\n");
@@ -133,11 +132,11 @@ static void TestAddFunctionCallAndComputation(){
   
   match = 1;
   
-  match = match && (read64bits_dram(va2pa(0x7ffffffee210,ac), ac) == 0x08000660); //rbp
-  match = match && (read64bits_dram(va2pa(0x7ffffffee208,ac),ac) == 0x1234abcd);
-  match = match && (read64bits_dram(va2pa(0x7ffffffee200,ac), ac) == 0xabcd);
-  match = match && (read64bits_dram(va2pa(0x7ffffffee1f8,ac),ac) == 0x12340000);  //栈从高往低走
-  match = match && (read64bits_dram(va2pa(0x7ffffffee1f0,ac),ac) == 0x08000660);  //rsp
+  match = match && (read64bits_dram(va2pa(0x7ffffffee210)) == 0x08000660); //rbp
+  match = match && (read64bits_dram(va2pa(0x7ffffffee208)) == 0x1234abcd);
+  match = match && (read64bits_dram(va2pa(0x7ffffffee200)) == 0xabcd);
+  match = match && (read64bits_dram(va2pa(0x7ffffffee1f8)) == 0x12340000);  //栈从高往低走
+  match = match && (read64bits_dram(va2pa(0x7ffffffee1f0)) == 0x08000660);  //rsp
 
 
   if(match == 1){
@@ -151,24 +150,21 @@ static void TestAddFunctionCallAndComputation(){
 // include guard 
 
 static void TestSumFunctionCallAndComputation(){
-  ACTIVE_CORE = 0x0;
 
-  core_t *ac = (core_t *)&cores[ACTIVE_CORE];
+  cpu_reg.rax = 0x3;
+  cpu_reg.rbx = 0x0;
+  cpu_reg.rcx = 0x8000650;
+  cpu_reg.rdx = 0x7ffffffee328;
+  cpu_reg.rsi = 0x7ffffffee318;
+  cpu_reg.rdi = 0x1;
+  cpu_reg.rbp = 0x7ffffffee230;
+  cpu_reg.rsp = 0x7ffffffee220;
 
-  ac->reg.rax = 0x3;
-  ac->reg.rbx = 0x0;
-  ac->reg.rcx = 0x8000650;
-  ac->reg.rdx = 0x7ffffffee328;
-  ac->reg.rsi = 0x7ffffffee318;
-  ac->reg.rdi = 0x1;
-  ac->reg.rbp = 0x7ffffffee230;
-  ac->reg.rsp = 0x7ffffffee220;
+  cpu_flags.__flags_value = 0;
 
-  ac->flags.__flag_values = 0;
-
-  wirte64bits_dram(va2pa(0x7ffffffee230, ac), 0x0000000000000650,ac);
-  wirte64bits_dram(va2pa(0x7ffffffee228, ac), 0x0000000000000000,ac);
-  wirte64bits_dram(va2pa(0x7ffffffee220, ac), 0x00007ffffffee310,ac);
+  wirte64bits_dram(va2pa(0x7ffffffee230), 0x0000000000000650);
+  wirte64bits_dram(va2pa(0x7ffffffee228), 0x0000000000000000);
+  wirte64bits_dram(va2pa(0x7ffffffee220), 0x00007ffffffee310);
 
 
   char assembly[19][MAX_INSTRUCTION_CHAR] = {
@@ -195,21 +191,21 @@ static void TestSumFunctionCallAndComputation(){
 
   //copy va to physical memroy
   for(int i = 0;i<19;i++){
-    writeinst_dram(va2pa(i*0x40+0x00400000, ac), assembly[i], ac);
+    writeinst_dram(va2pa(i*0x40+0x00400000), assembly[i]);
   }
 
 
   //start rip  is  assembly[16]
-  ac->rip = MAX_INSTRUCTION_CHAR * sizeof(char) *16 +0x00400000;
+  cpu_pc.rip = MAX_INSTRUCTION_CHAR * sizeof(char) *16 +0x00400000;
 
   printf("begin\n");
   int time = 0;
   
   //cycle times is not sure
-  while(ac->rip<=18*0x40+0x00400000 && time < MAX_NUM_INSTRUCTION_CYCLE){
-    instruction_cycle(ac);
-    print_register(ac);
-    print_stack(ac);
+  while(cpu_pc.rip <= 18*0x40+0x00400000 && time < MAX_NUM_INSTRUCTION_CYCLE){
+    instruction_cycle();
+    print_register();
+    print_stk();
     time++;
   }
 
@@ -217,14 +213,14 @@ static void TestSumFunctionCallAndComputation(){
 
   //gdb state ret from func
   int match = 1;
-  match = match && (ac->reg.rax == 0x6);
-  match = match && (ac->reg.rbx == 0x0);
-  match = match && (ac->reg.rcx == 0x8000650);
-  match = match && (ac->reg.rdx == 0x3);
-  match = match && (ac->reg.rsi == 0x7ffffffee318);
-  match = match && (ac->reg.rdi == 0x0);
-  match = match && (ac->reg.rbp == 0x7ffffffee230);
-  match = match && (ac->reg.rsp == 0x7ffffffee220);
+  match = match && (cpu_reg.rax == 0x6);
+  match = match && (cpu_reg.rbx == 0x0);
+  match = match && (cpu_reg.rcx == 0x8000650);
+  match = match && (cpu_reg.rdx == 0x3);
+  match = match && (cpu_reg.rsi == 0x7ffffffee318);
+  match = match && (cpu_reg.rdi == 0x0);
+  match = match && (cpu_reg.rbp == 0x7ffffffee230);
+  match = match && (cpu_reg.rsp == 0x7ffffffee220);
 
   if(match == 1){
     printf("register match\n");
@@ -234,9 +230,9 @@ static void TestSumFunctionCallAndComputation(){
   
   match = 1;
   
-  match = match && (read64bits_dram(va2pa(0x7ffffffee230,ac), ac) == 0x0); //rbp
-  match = match && (read64bits_dram(va2pa(0x7ffffffee228,ac),ac) == 0x0);
-  match = match && (read64bits_dram(va2pa(0x7ffffffee220,ac), ac) == 0x00007ffffffee310);  //rsp
+  match = match && (read64bits_dram(va2pa(0x7ffffffee230)) == 0x0); //rbp
+  match = match && (read64bits_dram(va2pa(0x7ffffffee228)) == 0x0);
+  match = match && (read64bits_dram(va2pa(0x7ffffffee220)) == 0x00007ffffffee310);  //rsp
 
 
   if(match == 1){
