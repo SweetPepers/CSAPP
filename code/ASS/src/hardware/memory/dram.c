@@ -12,39 +12,38 @@ uint8_t sram_cache_read(uint64_t paddr);
 void sram_cache_write(uint64_t paddr, uint8_t data);
 //flighting 
 uint64_t cpu_read64bits_dram(uint64_t paddr, core_t *cr){
-  uint64_t val = 0x0;
 
-  if(DEBUG_ENABLE_SRAM_CACHE == 1){
-    //load from sram
-    for(int i = 0;i<8; i++){
-      val += sram_cache_read(paddr+i)<<(i*8);
-    }
-    return val;
-  }else{
-    //read from dram
-    val += (((uint64_t)pm[paddr+0])<<0*8);
-    val += (((uint64_t)pm[paddr+1])<<1*8);
-    val += (((uint64_t)pm[paddr+2])<<2*8);
-    val += (((uint64_t)pm[paddr+3])<<3*8);
-    val += (((uint64_t)pm[paddr+4])<<4*8);
-    val += (((uint64_t)pm[paddr+5])<<5*8);
-    val += (((uint64_t)pm[paddr+6])<<6*8);
-    val += (((uint64_t)pm[paddr+7])<<7*8);
+  uint64_t val = 0x0;
+#ifdef DEBUG_ENABLE_SRAM_CACHE
+  //load from sram
+  for(int i = 0;i<8; i++){
+    val += sram_cache_read(paddr+i)<<(i*8);
   }
-  
-  
   return val;
+  #elif
+  //read from dram
+  val += (((uint64_t)pm[paddr+0])<<0*8);
+  val += (((uint64_t)pm[paddr+1])<<1*8);
+  val += (((uint64_t)pm[paddr+2])<<2*8);
+  val += (((uint64_t)pm[paddr+3])<<3*8);
+  val += (((uint64_t)pm[paddr+4])<<4*8);
+  val += (((uint64_t)pm[paddr+5])<<5*8);
+  val += (((uint64_t)pm[paddr+6])<<6*8);
+  val += (((uint64_t)pm[paddr+7])<<7*8);
+
+  return val;
+#endif
 }
 
 
 void cpu_wirte64bits_dram(uint64_t paddr, uint64_t data, core_t* cr){
-  if (DEBUG_ENABLE_SRAM_CACHE == 1){
+#ifdef DEBUG_ENABLE_SRAM_CACHE
     //load from sram
     for(int i = 0;i<8; i++){
       sram_cache_write((paddr+i)<<(i*8),  (data>>(8*i))  & 0xff);
     }
     return;
-  }
+#elif
 
   pm[paddr+0] = (data>>0)  & 0xff;
   pm[paddr+1] = (data>>8)  & 0xff;
@@ -54,6 +53,7 @@ void cpu_wirte64bits_dram(uint64_t paddr, uint64_t data, core_t* cr){
   pm[paddr+5] = (data>>40) & 0xff;
   pm[paddr+6] = (data>>48) & 0xff;
   pm[paddr+7] = (data>>56) & 0xff;
+#endif
 }
 
 

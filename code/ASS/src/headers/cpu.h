@@ -156,6 +156,7 @@ typedef union  CPU_FLAGS_STRUCT
     uint16_t OF;
   };
 }cpu_flags_t ;
+cpu_flags_t cpu_flags;
 
 
 
@@ -172,6 +173,26 @@ typedef struct  CORE_STRUCT{
   reg_t reg;
   // uint64_t pdbr; //page directory base register
 }core_t;
+
+typedef union
+{
+  uint64_t rip;
+  uint64_t eip;
+}cpu_pc_t;
+cpu_pc_t cpu_pc;
+
+
+//control registers
+typedef struct{
+  uint64_t cr0;
+  uint64_t cr1;
+  uint64_t cr2;
+  uint64_t cr3;  //should be a ppn for PGD in DRAM, 
+                 //but we are using 48-bits virtual address on simulator heap
+                  //by malloc
+}cpu_cr_t;
+cpu_cr_t cpu_controls;
+
 
 #define NUM_CORES 1
 core_t cores[NUM_CORES];

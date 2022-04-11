@@ -20,17 +20,19 @@
 #define VIRTUAL_PAGE_NUMBER_LENGTH (9)  // 9+9+9+9 = 36
 #define VIRTUAL_ADDRESS_LENGTH (48)
 
-
+#define TLB_CACHE_OFFSET_LENGTH (12)
+#define TLB_CACHE_INDEX_LENGTH (4)
+#define TLB_CACHE_TAG_LENGTH (32)
 
 /*
 +-------+---------+-------+----------+-------------------+
-| VPN3  |  VPN2   | VPN1  | VPN0     |                   |
-+-------+---------+-------+-+--------+     VPO           |
-|  TLBT                     | TLBI   |                   |
+| VPN1  |  VPN2   | VPN3  | VPN4     |                   |
++-------+---------+-------+-+--------+     VPO(12)       |
+|  TLBT(32)                 | TLBI(4)|                   |
 +-------------+-----------+----------+-------------------|
               |          PPN         |    PPO            |
               +----------------------+----------+--------+
-              |       ct             |      ci  |  co    |    
+              |         ct           |      ci  |  co    |    
               +----------------------+----------+--------+
 */
 
@@ -40,7 +42,7 @@ typedef union{
 
   //low -> high 
 
-  //physical address: 52
+  //physical address: 16
   union {
     uint64_t paddr_value : PHYSICAL_ADDRESS_LENGTH;
     struct {
@@ -50,26 +52,30 @@ typedef union{
   };
 
   //virtual address: 48
-  struct {
-    union {
-      uint64_t vaddr_value : VIRTUAL_ADDRESS_LENGTH;
-      struct {
-        uint64_t vpo : VIRTUAL_PAGE_OFFSET_LENGTH;
-        uint64_t vpn3 : VIRTUAL_PAGE_NUMBER_LENGTH;
-        uint64_t vpn2 : VIRTUAL_PAGE_NUMBER_LENGTH;
-        uint64_t vpn1 : VIRTUAL_PAGE_NUMBER_LENGTH;
-        uint64_t vpn0 : VIRTUAL_PAGE_NUMBER_LENGTH;
-      };
+  union {
+    uint64_t vaddr_value : VIRTUAL_ADDRESS_LENGTH;
+    struct {
+      uint64_t vpo  : VIRTUAL_PAGE_OFFSET_LENGTH;
+      uint64_t vpn4 : VIRTUAL_PAGE_NUMBER_LENGTH;
+      uint64_t vpn3 : VIRTUAL_PAGE_NUMBER_LENGTH;
+      uint64_t vpn2 : VIRTUAL_PAGE_NUMBER_LENGTH;
+      uint64_t vpn1 : VIRTUAL_PAGE_NUMBER_LENGTH;
     };
   };
 
-  
-
-  // sram cache : 52
+  // sram cache : 16
   struct {  
     uint64_t co : SRAM_CACHE_OFFSET_LENGTH;
     uint64_t ci : SRAM_CACHE_INDEX_LENGTH;
     uint64_t ct : SRAM_CACHE_TAG_LENGTH;
+  };
+
+
+  //TLB cache 48
+  struct{
+    uint64_t tlbo : TLB_CACHE_OFFSET_LENGTH;  //virtual page offset 
+    uint64_t tlbi : TLB_CACHE_INDEX_LENGTH ;  //TLB set index
+    uint64_t tlbt : TLB_CACHE_TAG_LENGTH;   //TLB line tag 
   };
    
 }address_t;
