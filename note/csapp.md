@@ -557,6 +557,9 @@ vpn->ppn
 
 ### 27 内存-用户态heap malloc隐式空闲链表
 
+- 内部碎片
+- 外部碎片
+
 ### 28 内存-malloc的第一种实现
 
 footer  --  header
@@ -564,7 +567,27 @@ footer  --  header
 ### 29 内存-malloc空闲链表优化 Explicit list
 
 这一节有点乱啊  改不过来了啊
-
+implicit list
 explicit list : free list  
 
 ### 2A 内存-malloc的第二种实现,双向环形explicit链表
+
+explicit list
+
+### 2B 内存-完成explicit链表, 平衡树malloc数据结构
+
+segregated list  
+binary search tree -> best fit
+
+### 2C 内存-malloc的第三种实现:二叉搜索树插入与删除
+
+面向对象的思想
+
+![2C红黑树结构](../picture/2C红黑树结构.png)
+
+### 2D 内存-BST删除
+
+![bstDelete](../picture/2CbstDelete.png)
+
+### 2E malloc-红黑树的定义与性质
+

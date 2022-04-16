@@ -195,6 +195,8 @@ typedef enum
 // Define the generic class for RB Tree node
 typedef struct
 {
+
+
   // "malloc" the memory of a node
   uint64_t (*construct_node)();
   // "free" the memory of a node
