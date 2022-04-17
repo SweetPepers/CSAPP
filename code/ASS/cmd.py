@@ -265,6 +265,7 @@ def build(key):
                     "./src/common/convert.c",
                     "./src/algorithm/bst.c",
                     "./src/algorithm/redblack.c",
+                    "./src/test/test_rbt.c",
                     "-o", "./bin/rb"
                 ],
             ],
@@ -286,6 +287,7 @@ def build(key):
                     "-DDEBUG_BST",
                     "./src/algorithm/bst.c",
                     "./src/common/convert.c",
+                    "./src/test/test_bst.c",
                     "-o", "./bin/bst"
                 ],
             ],

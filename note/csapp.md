@@ -591,3 +591,21 @@ binary search tree -> best fit
 
 ### 2E malloc-红黑树的定义与性质
 
+![rtbstructinit](../picture/2Erbt初始化.png)
+
+- rbt  2-3-4tree
+  - BT
+  - key: BST : X.L < x < X.R
+  - color : RBT
+    - black height
+    - BH = 0 ==> # || R(# #)
+    - $T_h$ ==> B($T_{h-1}$ $T_{h-1}$)
+
+![234tree](../picture/2E234tree.png)
+
+### 2F malloc-红黑树,插入与旋转, 推导与实现
+
+旋转:中序遍历的中间节点  
+![rotate](../picture/2Frbtrotate1.png)
+
+![rotate1](../picture/2Frbtrotate.png)
