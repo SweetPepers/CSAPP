@@ -1,3 +1,5 @@
+// include guards to prevent double declaration of any identifiers
+// such as types, enums and static variables
 #ifndef DATASTRUCTURE_GUARD
 #define DATASTRUCTURE_GUARD
 
@@ -60,7 +62,6 @@ trie_node_t *trie_construct();
 void trie_free(trie_node_t *root);
 trie_node_t *trie_insert(trie_node_t *root, char *key, uint64_t value);
 int trie_get(trie_node_t *root, char *key, uint64_t *valptr);
-trie_node_t *trie_next(trie_node_t *current, char input);
 
 //  The following data structures and algorithms
 //  are designed to be Generic. To use, the user
@@ -130,12 +131,12 @@ void linkedlist_validate_interface(linkedlist_node_interface *i_node,
 typedef struct LINKEDLIST_INTERNAL_STRUCT
 {
   uint64_t head;
-  int64_t count;
+  uint64_t count;
 
   // this: this pointer
   // <uint64_t> "node": the id of new head node
   // return <int>: 1 if the updating is successful
-  int (*update_head)(struct LINKEDLIST_INTERNAL_STRUCT *this_p, uint64_t);
+  int (*update_head)(struct LINKEDLIST_INTERNAL_STRUCT *this, uint64_t);
 } linkedlist_internal_t;
 
 // The linked list implementation open to other data structures
@@ -165,7 +166,7 @@ typedef union
   struct
   {
     uint64_t head;
-    int64_t count;
+    uint64_t count;
   };
 } linkedlist_t;
 
@@ -195,8 +196,6 @@ typedef enum
 // Define the generic class for RB Tree node
 typedef struct
 {
-
-
   // "malloc" the memory of a node
   uint64_t (*construct_node)();
   // "free" the memory of a node
@@ -282,7 +281,7 @@ typedef struct RBTREE_INTERNAL_STRUCT
   // this: this pointer
   // <uint64_t> "node": the id of new root node
   // return <int>: 1 if the updating is successful
-  int (*update_root)(struct RBTREE_INTERNAL_STRUCT *this_p, uint64_t);
+  int (*update_root)(struct RBTREE_INTERNAL_STRUCT *this, uint64_t);
 } rbtree_internal_t;
 
 typedef enum
@@ -335,7 +334,7 @@ typedef union
     // this: this pointer
     // <uint64_t> "node": the id of new root node
     // return <int>: 1 if the updating is successful
-    int (*update_root)(struct RBTREE_INTERNAL_STRUCT *this_p, uint64_t);
+    int (*update_root)(struct RBTREE_INTERNAL_STRUCT *this, uint64_t);
   };
 } rb_tree_t;
 
@@ -356,7 +355,8 @@ void bst_internal_insert(rbtree_internal_t *tree,
                          uint64_t node_id);
 void bst_internal_delete(rbtree_internal_t *tree,
                          rbtree_node_interface *i_node,
-                         uint64_t node_id);
+                         uint64_t node_id, int is_rbt,
+                         uint64_t *db_parent);
 uint64_t bst_internal_find(rbtree_internal_t *tree,
                            rbtree_node_interface *i_node,
                            uint64_t key);

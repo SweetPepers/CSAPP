@@ -609,3 +609,36 @@ binary search tree -> best fit
 ![rotate](../picture/2Frbtrotate1.png)
 
 ![rotate1](../picture/2Frbtrotate.png)
+
+### 30 malloc-红黑树的删除
+
+9种情况 实际是4种
+
+![rbt-delete](../picture/30rbt删除.png)
+
+```c
+/******************************/
+//red->0  black->1
+// PSNF
+// 0100 (4) 旋转，结束
+// 0101 (5) 旋转，结束
+// 0110 (6) 旋转，结束
+// 0111 (7) 重新着色，结束
+// 1011 (B) 旋转，转化为4,5,6,7
+// 1100 (C) 旋转，结束
+// 1101 (D) 旋转，结束
+// 1110 (E) 旋转，结束
+// 1111 (F) 重新着色，转化为4,5,6,7,B,C,D,E,F
+
+//----------------------------//
+```
+
+### 31 malloc-红黑树删除实现
+
+```c
+void rbt_internal_delete(rbtree_internal_t *tree,
+                         rbtree_node_interface *i_node,
+                         uint64_t node_id)
+```
+
+### 32 malloc-malloc完结,小内存优化, 红黑树与链表结合
