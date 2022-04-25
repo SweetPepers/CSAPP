@@ -72,6 +72,7 @@ uint8_t sram_cache_read(uint64_t paddr_value)
   //update LRU time
   int max_time = -1;
 
+  //find victim and invalid
   for (int i = 0; i < NUM_CACHE_LINE_PER_SET; ++i)
   {
     sram_cacheline_t *line = &(set->lines[i]);
@@ -146,7 +147,10 @@ uint8_t sram_cache_read(uint64_t paddr_value)
   {
 #ifndef CACHE_SIMULATION_VERIFICATION
     // write back the dirty line to dram
-    bus_write_cacheline(paddr.paddr_value, victim);
+    address_t dirty_paddr = paddr;
+    dirty_paddr.ct = victim->tag;
+    bus_write_cacheline(dirty_paddr.paddr_value, victim);
+    
 #else
     dirty_bytes_evicted_count += (1 << SRAM_CACHE_OFFSET_LENGTH);
     dirty_bytes_in_cache_count -= (1 << SRAM_CACHE_OFFSET_LENGTH);
@@ -283,7 +287,9 @@ void sram_cache_write(uint64_t paddr_value, uint8_t data)
   {
 #ifndef CACHE_SIMULATION_VERIFICATION
     // write back the dirty line to dram
-    bus_write_cacheline(paddr.paddr_value, victim);
+    address_t dirty_paddr = paddr;
+    dirty_paddr.ct = victim->tag;
+    bus_write_cacheline(dirty_paddr.paddr_value, victim);
 #else
     dirty_bytes_evicted_count += (1 << SRAM_CACHE_OFFSET_LENGTH);
     dirty_bytes_in_cache_count -= (1 << SRAM_CACHE_OFFSET_LENGTH);

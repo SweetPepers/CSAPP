@@ -1,53 +1,63 @@
+// Dynamic Random Access Memory
+#include <string.h>
+#include <assert.h>
 #include "headers/cpu.h"
 #include "headers/memory.h"
 #include "headers/common.h"
 #include "headers/address.h"
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-
-#define SRAM_CACHE_SRTTING 0 //是否读写
 
 uint8_t sram_cache_read(uint64_t paddr);
 void sram_cache_write(uint64_t paddr, uint8_t data);
-//flighting
+
+/*  
+Be careful with the x86-64 little endian integer encoding
+e.g. write 0x00007fd357a02ae0 to cache, the memory lapping should be:
+    e0 2a a0 57 d3 7f 00 00
+*/
+
+// memory accessing used in instructions
 uint64_t cpu_read64bits_dram(uint64_t paddr)
 {
-
-  uint64_t val = 0x0;
 #ifdef DEBUG_ENABLE_SRAM_CACHE
-  //load from sram
-  for (int i = 0; i < 8; i++)
+  // try to load uint64_t from SRAM cache
+  // little-endian
+  uint64_t val = 0x0;
+  for (int i = 0; i < 8; ++i)
   {
-    val += sram_cache_read(paddr + i) << (i * 8);
+    val += (sram_cache_read(paddr + i) << (i * 8));
   }
   return val;
 #elif
-  //read from dram
-  val += (((uint64_t)pm[paddr + 0]) << 0 * 8);
-  val += (((uint64_t)pm[paddr + 1]) << 1 * 8);
-  val += (((uint64_t)pm[paddr + 2]) << 2 * 8);
-  val += (((uint64_t)pm[paddr + 3]) << 3 * 8);
-  val += (((uint64_t)pm[paddr + 4]) << 4 * 8);
-  val += (((uint64_t)pm[paddr + 5]) << 5 * 8);
-  val += (((uint64_t)pm[paddr + 6]) << 6 * 8);
-  val += (((uint64_t)pm[paddr + 7]) << 7 * 8);
+  // read from DRAM directly
+  // little-endian
+  uint64_t val = 0x0;
+
+  val += (((uint64_t)pm[paddr + 0]) << 0);
+  val += (((uint64_t)pm[paddr + 1]) << 8);
+  val += (((uint64_t)pm[paddr + 2]) << 16);
+  val += (((uint64_t)pm[paddr + 3]) << 24);
+  val += (((uint64_t)pm[paddr + 4]) << 32);
+  val += (((uint64_t)pm[paddr + 5]) << 40);
+  val += (((uint64_t)pm[paddr + 6]) << 48);
+  val += (((uint64_t)pm[paddr + 7]) << 56);
 
   return val;
 #endif
 }
 
-void cpu_wirte64bits_dram(uint64_t paddr, uint64_t data)
+void cpu_write64bits_dram(uint64_t paddr, uint64_t data)
 {
 #ifdef DEBUG_ENABLE_SRAM_CACHE
-  //load from sram
-  for (int i = 0; i < 8; i++)
+  // try to write uint64_t to SRAM cache
+  // little-endian
+  for (int i = 0; i < 8; ++i)
   {
-    sram_cache_write((paddr + i) << (i * 8), (data >> (8 * i)) & 0xff);
+    sram_cache_write(paddr + i, (data >> (i * 8)) & 0xff);
   }
   return;
 #elif
-
+  // write to DRAM directly
+  // little-endian
   pm[paddr + 0] = (data >> 0) & 0xff;
   pm[paddr + 1] = (data >> 8) & 0xff;
   pm[paddr + 2] = (data >> 16) & 0xff;
@@ -59,7 +69,6 @@ void cpu_wirte64bits_dram(uint64_t paddr, uint64_t data)
 #endif
 }
 
-//read paddr -> buf
 void cpu_readinst_dram(uint64_t paddr, char *buf)
 {
   for (int i = 0; i < MAX_INSTRUCTION_CHAR; ++i)
@@ -68,14 +77,12 @@ void cpu_readinst_dram(uint64_t paddr, char *buf)
   }
 }
 
-//wirite buf -> paddr
 void cpu_writeinst_dram(uint64_t paddr, const char *str)
 {
-
   int len = strlen(str);
   assert(len < MAX_INSTRUCTION_CHAR);
 
-  for (int i = 0; i < MAX_INSTRUCTION_CHAR; i++)
+  for (int i = 0; i < MAX_INSTRUCTION_CHAR; ++i)
   {
     if (i < len)
     {
@@ -88,22 +95,24 @@ void cpu_writeinst_dram(uint64_t paddr, const char *str)
   }
 }
 
-//interface of I/O BUS : read and write between the SRAM cache and DRAM memory
-void bus_read(uint64_t paddr, uint8_t *block)
-{
-  uint64_t dram_base = (paddr >> SRAM_CACHE_OFFSET_LENGTH) << SRAM_CACHE_OFFSET_LENGTH;
+/* interface of I/O Bus: read and write between the SRAM cache and DRAM memory
+ */
 
-  for (int i = 0; i < (1 << SRAM_CACHE_OFFSET_LENGTH); i++)
+void bus_read_cacheline(uint64_t paddr, uint8_t *block)
+{
+  uint64_t dram_base = ((paddr >> SRAM_CACHE_OFFSET_LENGTH) << SRAM_CACHE_OFFSET_LENGTH);
+
+  for (int i = 0; i < (1 << SRAM_CACHE_OFFSET_LENGTH); ++i)
   {
     block[i] = pm[dram_base + i];
   }
 }
 
-void bus_write(uint64_t paddr, uint8_t *block)
+void bus_write_cacheline(uint64_t paddr, uint8_t *block)
 {
-  uint64_t dram_base = (paddr >> SRAM_CACHE_OFFSET_LENGTH) << SRAM_CACHE_OFFSET_LENGTH;
+  uint64_t dram_base = ((paddr >> SRAM_CACHE_OFFSET_LENGTH) << SRAM_CACHE_OFFSET_LENGTH);
 
-  for (int i = 0; i < (1 << SRAM_CACHE_OFFSET_LENGTH); i++)
+  for (int i = 0; i < (1 << SRAM_CACHE_OFFSET_LENGTH); ++i)
   {
     pm[dram_base + i] = block[i];
   }

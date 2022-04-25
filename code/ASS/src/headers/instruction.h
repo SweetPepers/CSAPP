@@ -24,6 +24,7 @@ typedef enum INST_OPERATOR{
   INST_JNE,     //9
   INST_JMP,     //10
   INST_LEAVE,   //11
+  INST_LEA,     //12
 }op_t;
 
 

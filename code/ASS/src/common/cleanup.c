@@ -1,29 +1,33 @@
 #include <assert.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "headers/common.h"
 #include "headers/algorithm.h"
 
-typedef void(*cleanup_t)();
+typedef void (*cleanup_t)();
 
-static array_t* events = NULL;
+static array_t *events = NULL;
 
-void add_cleanup_event(void *func){
+void add_cleanup_event(void *func)
+{
   assert(func != NULL);
 
-  if(events == NULL){
-    //start from 8 slots
+  if (events == NULL)
+  {
+    // uninitialized - lazy malloc
+    // start from 8 slots
     events = array_construct(8);
   }
 
-  //fill in the first event
-  array_insert(&events, (uint64_t)func);
+  // fill in the first event
+  events = array_insert(events, (uint64_t)func);
   return;
 }
 
-void finally_cleanup(){
-  for(int i = 0;i<events->count;i++){
+void finally_cleanup()
+{
+  for (int i = 0; i < events->count; ++i)
+  {
     uint64_t address;
     assert(array_get(events, i, &address) != 0);
 
@@ -32,7 +36,7 @@ void finally_cleanup(){
     (*func)();
   }
 
+  // clean itself
   array_free(events);
   events = NULL;
 }
-

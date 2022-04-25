@@ -407,10 +407,22 @@ long long a = 2147483648;//y.c
 - virsual memroy  
 - interupt
 
+![busstructure](../picture/busStructure.png)
+
+![mem_hierarchy](../picture/6.21mem_hierarchy.png)
+
+cache misses
+
+- compulsory miss /cold miss
+- conflict miss
+- capacity miss
+
 ### 1B 内存-cache地址格式
 
 组相联
 三元组
+
+![cache_addr](../picture/6.4cache_addr.png)
 
 - ct cache tag    40
 - ci cache index  6
@@ -480,7 +492,11 @@ MESI
 
 ### 1F 内存-并行中的缓存伪共享
 
+表面共享了 实际因为cache以块为单位, 实际两个进程仍然存在访问同一个cache行的情况
+
 ### 20 内存-多级页表,虚拟地址,物理地址
+
+![virtualAddressSystem](../picture/9.1virtualsystem.png)
 
 - 1. va2pa %  function
 - 2. hashmap H(va) -> pa
@@ -534,6 +550,10 @@ disk
 
 ### 24 内存-虚拟内存总览
 
+![VMwith_physical_address](../picture/9.6VMwithPACache.png)
+
+![VMwithTLB](../picture/9.6VMwithTLB.png)
+
 PCB process control block  
 
 p0 IDLE : 创建 p1 init  
@@ -542,9 +562,28 @@ p0 IDLE : 创建 p1 init
 
 //TODO: watch again
 
+//TODO: page fault -- interrupt
+
 ![24虚拟内存总览](../picture/24虚拟内存总览.jpg)
 
 ### 25 内存-实现反向映射与交换空间
+
+page-map
+
+```c
+typedef struct{
+  //TODO : if multiple processes are using this page? E.g. shared library
+  pte4_t *pte4; //reversed mapping : ppn -> page_table_entry
+  
+  int allocated;
+  int dirty;
+  int time;  //LRU cache
+
+  uint64_t daddr;  //binding the reverse mapping with mapping to disk 
+}pd_t;
+
+pd_t page_map[MAX_NUM_PHYSICAL_PAGE];  
+```
 
 ### 26 内存-TLB硬件加速虚拟地址翻译
 
@@ -557,8 +596,14 @@ vpn->ppn
 
 ### 27 内存-用户态heap malloc隐式空闲链表
 
+heap模型
+
+![heap](../picture/heap.png)
+
 - 内部碎片
 - 外部碎片
+
+rbt 里面存在 padding  (限于 free)
 
 ### 28 内存-malloc的第一种实现
 
@@ -642,3 +687,30 @@ void rbt_internal_delete(rbtree_internal_t *tree,
 ```
 
 ### 32 malloc-malloc完结,小内存优化, 红黑树与链表结合
+
+rbt内存堆内结构
+
+![rbt内存堆内结构](../picture/32rbt内存结构.png)
+
+红黑树最小的free块: 4+4*3+4(hdr par l r ftr) = 20 8bits对齐 -> 24  
+极端利用率只有 1/24  
+
+解决-> 利用8bits对齐的最后一位
+
+- 8bits smalllist
+- 16bits explicit_list
+- \>=24bits rbt cv
+
+![small_list](../picture/32smalllist.png)
+
+![d堆](../picture/32d堆.png)
+
+### 33 垃圾回收-引用计数
+
+回顾alloc
+
+压缩? compacting  就把所有的free合在一起
+
+搜索策略
+
+![find_a_free_block](../picture/33FindAFreeBlock.png)
