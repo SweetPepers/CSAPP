@@ -714,3 +714,132 @@ rbt内存堆内结构
 搜索策略
 
 ![find_a_free_block](../picture/33FindAFreeBlock.png)
+
+发现内存为垃圾  
+比如定期扫描看哪一块内存没有被引用
+
+![引用](../picture/33引用.png)
+
+引用计数
+
+### 34 垃圾回收-标记清扫、标记压缩算法
+
+四种垃圾回收算法
+
+- reference count(csapp)
+  - python 
+  - 
+- mark-sweep
+  - tracing
+  - 标记所有的已分配内存, 然后遍历heap释放mark = 0的已分配节点  
+- mark-compact
+  - tracing
+- mark-copy(sicp:lisp)
+  - tracing
+- generational 分代
+
+用 dfs(内存中的stack)实现mark
+
+```c
+//全局变量
+typedef struct{
+  int i;
+  int j;
+}a;
+
+// 只有a 分配在 .date段
+// i和j 被分配在.heap中
+
+//函数里面声明的变量 分配在 .stack中
+```
+
+mark sweep
+![mark_sweep](../picture/34mark_sweep.png)
+
+![updateReference](../picture/34updateReference.png)
+
+dfs
+三轮扫描
+- updateReference : fast slow
+  - forward address: stored in hdr  
+- updateForward  
+  - parent updates  
+- copy 
+
+### 垃圾回收-标记复制、引用计数算法
+
+mark-copy
+
+两段heap  From  To
+2 semi-space
+
+![mark_cpoy](../picture/35mark-copy.png)
+
+每次要重新定位forward
+
+![reset_with_forward](../picture/35resetWithForward.png)
+
+count
+引用计数  --- 连锁问题 -- dfs
+
+问题 环形引用 无法回收
+- 1. strong  weak
+- 2. mark_sweep 
+- 3. trail deletion(非常复杂)
+
+### 36 垃圾回收-分代垃圾回收GC
+
+generational GC
+
+存在那种一直有被引用的内存, 但每次mark的时候仍然扫描, 浪费了时间
+
+分层(分代) generational  每层满了再去mark
+
+![generational](../picture/36generational.jpg)
+
+
+引出三个问题
+- 跨gen引用
+  - roots
+  - ![跨gen引用](../picture/36跨gen引用.jpg)  
+  这种情况不访问gen1 就把(9)当成垃圾了
+  - 要记录 gen1 --> gen0的引用表(即使存在gen1中已经成为垃圾却仍有引用的情况)
+  - 处理g1时才能发现上述情况垃圾
+- large object
+  - 大文件要不要copy?
+    - 设置一个专门的空间用于存储大文件
+    - ![largeObject](../picture/36largeobject.jpg)
+- native object 
+  - c/cpp  不知道对象的具体类型
+  - 听不懂  TODO再来一遍
+
+### 37 异常控制流-同步的Fault、系统调用, 异步的中断
+
+ECF
+- os proc manage 
+- isa
+- device
+
+异常控制表?  系统启动时读取到dram中(read only)
+
+![pageFault](../picture/37pageFault.jpg)
+
+exception table
+
+![difference](../picture/37com_call_interupt..jpg)
+
+- return to I_curr
+- return to I_next
+- aborts the interrupted program
+
+exception
+- sync
+  - Trap/syscall  -- int syscall iret
+  - Fault -- page fault, divided by zero
+  - Abort   -- null , segment fault , code dunp
+- Async
+  - Interrupt  I/O:key board, mouse, disk, network
+
+### 38 异常控制流-系统调用
+
+
