@@ -842,4 +842,33 @@ exception
 
 ### 38 异常控制流-系统调用
 
+4 exceptions
+
+1. External Interrupt (APIC timer) (advanced programable interrupt controller)
+2. Trap/system call -- fork, exec, read, write, brk etc.
+3. Fault  -- page fault(MMU)  protected fault(user -> kernel)
+4. Abort --> dead
+
+![context_switch](../picture/38ContextSwitch.jpg)
+
+主要的时间开销: 刷新 MMU  
+
+内核栈 kstack
+
+
+### 39异常控制流-实现中断的代码框架
+
+每个进程拥有独自的kstack : 8KB(2 page)
+
+PCB
+
+![PCB](../picture/39PCB_task_struct.jpg)
+
+TSS中拿到kstack的起始地址就可以获得进程的所有信息
+
+如果把中断代码实现在physical memory中, 就要把所有的中断处理代码编写好, 编译后写入pm中, 并且需要实现完备的指令集
+
+### 3A异常控制流-系统调用Hello World
+
+### 3B异常控制流-系统调用、用户态进程、内核栈
 

@@ -38,14 +38,18 @@ static void page_fault_handler(pte4_t *pte, address_t vaddr);
 
 int swap_in(uint64_t daddr, uint64_t ppn);
 int swap_out(uint64_t daddr, uint64_t ppn);
+
 static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr, int *free_tlb_line_index);
 static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value, int free_tlb_line_index);
 
 // consider this function va2pa as functional
 uint64_t va2pa(uint64_t vaddr)
 {
+  
+#ifdef USE_NAVIE_VA2PA
+  return vaddr % PHYSICAL_MEMROY_SPACE;
+#endif
   uint64_t paddr = 0;
-
 #ifdef USE_TLB_HARDWARE
   int free_tlb_line_index = -1;
   int tlb_hit = read_tlb(vaddr, &paddr, &free_tlb_line_index);
@@ -105,7 +109,7 @@ static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr, int *free_t
   }
 
   // TLB read miss
-  *paddr_value_ptr = NULL;
+  paddr_value_ptr = NULL;
   return 0;
 }
 
@@ -150,18 +154,18 @@ static uint64_t page_walk(uint64_t vaddr_value)
   {
     // PHYSICAL PAGE NUMBER of the next level page table
     // aka. high bits starting address of the page table
-    pte123_t *pud = pgd[vaddr.vpn1].paddr;
+    pte123_t *pud = (pte123_t *)(pgd[vaddr.vpn1].pte_value);
 
     if (pud[vaddr.vpn2].present == 1)
     {
       // find pmd ppn
 
-      pte123_t *pmd = (pte123_t *)(pud[vaddr.vpn2].paddr);
+      pte123_t *pmd = (pte123_t *)(pud[vaddr.vpn2].pte_value);
 
       if (pmd[vaddr.vpn3].present == 1)
       {
         // find pt ppn
-        pte4_t *pt = (pte4_t *)(pmd[vaddr.vpn3].paddr);
+        pte4_t *pt = (pte4_t *)(pmd[vaddr.vpn3].pte_value);
 
         if (pt[vaddr.vpn4].present == 1)
         {
@@ -251,6 +255,7 @@ static uint64_t page_walk(uint64_t vaddr_value)
     // map the physical page and the virtual page
     exit(0);
   }
+  return 0;
 }
 
 static void page_fault_handler(pte4_t *pte, address_t vaddr)

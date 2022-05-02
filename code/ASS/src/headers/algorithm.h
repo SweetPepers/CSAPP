@@ -62,6 +62,7 @@ trie_node_t *trie_construct();
 void trie_free(trie_node_t *root);
 trie_node_t *trie_insert(trie_node_t *root, char *key, uint64_t value);
 int trie_get(trie_node_t *root, char *key, uint64_t *valptr);
+trie_node_t *trie_next(trie_node_t *current, char input);
 
 //  The following data structures and algorithms
 //  are designed to be Generic. To use, the user
@@ -131,7 +132,7 @@ void linkedlist_validate_interface(linkedlist_node_interface *i_node,
 typedef struct LINKEDLIST_INTERNAL_STRUCT
 {
   uint64_t head;
-  uint64_t count;
+  int64_t count;
 
   // this: this pointer
   // <uint64_t> "node": the id of new head node
@@ -166,7 +167,7 @@ typedef union
   struct
   {
     uint64_t head;
-    uint64_t count;
+    int64_t count;
   };
 } linkedlist_t;
 

@@ -185,6 +185,7 @@ typedef struct
 } cpu_reg_t;
 cpu_reg_t cpu_reg;
 
+
 /*======================================*/
 /*      cpu core                        */
 /*======================================*/
@@ -232,6 +233,7 @@ typedef union
         uint16_t OF;
     };        
 } cpu_flags_t;
+
 cpu_flags_t cpu_flags;
 
 // program counter or instruction pointer
@@ -241,6 +243,9 @@ typedef union
     uint32_t eip;
 } cpu_pc_t;
 cpu_pc_t cpu_pc;
+
+// pointing to Task-state-segment(in main memory) of the current process
+uint64_t cpu_task_register;
 
 // control registers
 typedef struct
@@ -255,7 +260,6 @@ typedef struct
 cpu_cr_t cpu_controls;
 
 // move to common.h to be shared by linker
-#define MAX_INSTRUCTION_CHAR 64
 #define NUM_INSTRTYPE 14
 
 // CPU's instruction cycle: execution of instructions
