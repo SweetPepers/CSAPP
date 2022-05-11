@@ -29,6 +29,15 @@ static void wait_handler();
 static void kill_handler();
 
 
+static void distroy_user_registers()
+{
+  // when run kernel context, user registers should be useless (except rsp)
+  
+  memset(&cpu_reg, 0, sizeof(cpu_reg));
+  memset(&cpu_flags, 0, sizeof(cpu_flags));
+
+}
+
 void syscall_init()
 {
   syscall_table[01].handler = write_handler;
@@ -44,11 +53,12 @@ void syscall_init()
 static void write_handler()
 {
   // assembly begin 
+  // get user thread parameters
   uint64_t file_no = cpu_reg.rdi;
   uint64_t buf_vaddr = cpu_reg.rsi;
   uint64_t buf_len = cpu_reg.rdx;
-
   // assembly end
+  distroy_user_registers();
 
   for(int i =0 ; i< buf_len;i++){
     printf("%c", pm[va2pa(buf_vaddr+i)]);
@@ -92,8 +102,7 @@ static void kill_handler()
 
 
 void do_syscall(int syscall_no)
-{
+{  
   assert(syscall_no >= 0 && syscall_no <= 64);
   syscall_table[syscall_no].handler();
-
 }

@@ -7,6 +7,7 @@
 #include "headers/memory.h"
 #include "headers/common.h"
 #include "headers/address.h"
+#include "headers/interrupt.h"
 
 // ---------------------------------------//
 //           TLB cache struct             //
@@ -33,11 +34,11 @@ typedef struct
 
 static tlb_cache_t mmu_tlb;
 
-static uint64_t page_walk(uint64_t vaddr_value);
+// static uint64_t page_walk(uint64_t vaddr_value);
 static void page_fault_handler(pte4_t *pte, address_t vaddr);
 
-int swap_in(uint64_t daddr, uint64_t ppn);
-int swap_out(uint64_t daddr, uint64_t ppn);
+int swap_in(uint64_t saddr, uint64_t ppn);
+int swap_out(uint64_t saddr, uint64_t ppn);
 
 static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr, int *free_tlb_line_index);
 static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value, int free_tlb_line_index);
@@ -45,7 +46,7 @@ static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value, int free_tlb_li
 // consider this function va2pa as functional
 uint64_t va2pa(uint64_t vaddr)
 {
-  
+
 #ifdef USE_NAVIE_VA2PA
   return vaddr % PHYSICAL_MEMROY_SPACE;
 #endif
@@ -63,10 +64,10 @@ uint64_t va2pa(uint64_t vaddr)
 
   // TLB read miss
 #endif
-
+#ifdef USE_PAGETABLE_VA2PA
   // assume that page_walk is consuming much time
   paddr = page_walk(vaddr);
-
+#endif
 #ifdef USE_TLB_HARDWARE
   // refresh TLB
   // TODO: check if this paddr from page table is a legal address
@@ -83,6 +84,8 @@ uint64_t va2pa(uint64_t vaddr)
   // use page table as va2pa
   return paddr;
 }
+
+#ifdef USE_TLB_HARDWARE
 
 static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr, int *free_tlb_line_index)
 {
@@ -135,251 +138,73 @@ static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value,
   return 1;
 }
 
+#endif
+
+#ifdef USE_PAGETABLE_VA2PA
 //input - virtual address
 //output - physical address
 //cr3->pgd->pud->pmd
 static uint64_t page_walk(uint64_t vaddr_value)
 {
+  // parse address
   address_t vaddr = {
       .vaddr_value = vaddr_value};
-  
-  // 512 * 8B = 4KB
-  int page_table_size = PAGE_TABLE_ENTRY_NUMBER * sizeof(pte123_t); // should be 4KB
+  int vpns[4] = {
+      vaddr.vpn1,
+      vaddr.vpn2,
+      vaddr.vpn3,
+      vaddr.vpn4,
+  };
+  int vpo = vaddr.vpo;
+
+  int page_table_size = PAGE_TABLE_ENTRY_NUMBER * sizeof(pte123_t);
 
   // CR3 register's value is malloced on the heap of the simulator
   pte123_t *pgd = (pte123_t *)cpu_controls.cr3;
   assert(pgd != NULL);
+  assert(sizeof(pte123_t) == sizeof(pte4_t));
+  assert(page_table_size == (1 << 12));
 
-  if (pgd[vaddr.vpn1].present == 1)
+  int level = 0;
+  pte123_t *tab = pgd;
+  while (level < 3)
   {
-    // PHYSICAL PAGE NUMBER of the next level page table
-    // aka. high bits starting address of the page table
-    pte123_t *pud = (pte123_t *)(pgd[vaddr.vpn1].pte_value);
-
-    if (pud[vaddr.vpn2].present == 1)
+    int vpn = vpns[level];
+    if (tab[vpn].present != 1)
     {
-      // find pmd ppn
-
-      pte123_t *pmd = (pte123_t *)(pud[vaddr.vpn2].pte_value);
-
-      if (pmd[vaddr.vpn3].present == 1)
-      {
-        // find pt ppn
-        pte4_t *pt = (pte4_t *)(pmd[vaddr.vpn3].pte_value);
-
-        if (pt[vaddr.vpn4].present == 1)
-        {
-          // find page table entry
-          address_t paddr = {
-              .ppn = pt[vaddr.vpn4].ppn,
-              .ppo = vaddr.vpo // page offset inside the 4KB page
-          };
-
-          return paddr.paddr_value;
-        }
-        else
-        {
-          // page table entry not exists
-#ifdef DBUEG_PAGE_WALK
-          printf("page walk level 4: pt[%lx].present == 0\n\tmalloc new page table for it\n", vaddr.vpn1);
-#endif
-          // search paddr from main memory and disk
-          // TODO: raise exception 14 (page fault) here
-          // switch privilege from user mode (ring 3) to kernel mode (ring 0)
-          page_fault_handler(&pt[vaddr.vpn4], vaddr);
-
-          /*
-                    pte4_t *pt = malloc(page_table_size);
-                    memset(pt, 0, page_table_size);
-
-                    // set page table entry
-                    pmd[vaddr.vpn3].present = 1;
-                    pud[vaddr.vpn3].paddr   = (uint64_t)pt;
-
-                    // TODO: page fault here
-                    // map the physical page and the virtual page
-                    exit(0);
-                    */
-        }
-      }
-      else
-      {
-        // pt - level 4 not exists
-#ifdef DBUEG_PAGE_WALK
-        printf("page walk level 3: pmd[%lx].present == 0\n\tmalloc new page table for it\n", vaddr.vpn1);
-#endif
-        pte4_t *pt = malloc(page_table_size);
-        memset(pt, 0, page_table_size);
-
-        // set page table entry
-        pmd[vaddr.vpn3].present = 1;
-        pud[vaddr.vpn3].paddr = (uint64_t)pt;
-
-        // TODO: page fault here
-        // map the physical page and the virtual page
-        exit(0);
-      }
+      // page fault
+      printf("\033[31;1mMMU (%lx): level %d page fault: [%x].present == 0\n\033[0m", vaddr_value, level + 1, vpn);
+      goto RAISE_PAGE_FAULT;
     }
-    else
-    {
-      // pmd - level 3 not exists
-#ifdef DBUEG_PAGE_WALK
-      printf("page walk level 2: pud[%lx].present == 0\n\tmalloc new page table for it\n", vaddr.vpn1);
-#endif
-      pte123_t *pmd = malloc(page_table_size);
-      memset(pmd, 0, page_table_size);
 
-      // set page table entry
-      pud[vaddr.vpn2].present = 1;
-      pud[vaddr.vpn2].paddr = (uint64_t)pmd;
+    // move to next level
+    tab = (pte123_t *)((uint64_t)tab[vpn].paddr);
+    level += 1;
+  }
 
-      // TODO: page fault here
-      // map the physical page and the virtual page
-      exit(0);
-    }
+  pte4_t *pte = &((pte4_t *)tab)[vaddr.vpn4];
+  if (pte->present == 1)
+  {
+    // find page table entry
+    address_t paddr = {
+        .ppn = pte->ppn,
+        .ppo = vpo // page offset inside the 4KB page
+    };
+    return paddr.paddr_value;
   }
   else
   {
-    // pud - level 2 not exists
-#ifdef DBUEG_PAGE_WALK
-    printf("page walk level 1: pgd[%lx].present == 0\n\tmalloc new page table for it\n", vaddr.vpn1);
-#endif
-    pte123_t *pud = malloc(page_table_size);
-    memset(pud, 0, page_table_size);
-
-    // set page table entry
-    pgd[vaddr.vpn1].present = 1;
-    pgd[vaddr.vpn1].paddr = (uint64_t)pud;
-
-    // TODO: page fault here
-    // map the physical page and the virtual page
-    exit(0);
+    printf("\033[31;1mMMU (%lx): level 4 page fault: [%x].present == 0\n\033[0m", vaddr_value, vaddr.vpn4);
   }
+
+RAISE_PAGE_FAULT:
+  mmu_vaddr_pagefault = vaddr.vaddr_value;
+  // This interrupt will not return
+  interrupt_stack_switching(0x0e);
   return 0;
 }
-
-static void page_fault_handler(pte4_t *pte, address_t vaddr)
-{
-  // select one victim physical page to swap to disk
-  assert(pte->present == 0);
-
-  // this is the selected ppn for vaddr
-  int ppn = -1;
-  pte4_t *victim = NULL;
-  uint64_t daddr = 0xffffffffffffffff;
-
-  // 1. try to request one free physical page from DRAM
-  // kernel's responsibility
-  for (int i = 0; i < MAX_NUM_PHYSICAL_PAGE; ++i)
-  {
-    if (page_map[i].pte4->present == 0)
-    {
-      printf("PageFault: use free ppn %d\n", i);
-
-      // found i as free ppn
-      ppn = i;
-      page_map[ppn].allocated = 1;
-      page_map[ppn].dirty = 0;
-      page_map[ppn].time = 0; // most recently used
-
-      page_map[ppn].pte4 = pte;
-
-      pte->present = 1;
-      pte->ppn = ppn;
-      pte->dirty = 0;
-
-      return;
-    }
-  }
-
-  // 2. no free physical page: select one clean page (LRU) and overwrite
-  // in this case, there is no DRAM - DISK transaction
-  int lru_ppn = -1;
-  int lru_time = -1;
-  for (int i = 0; i < MAX_NUM_PHYSICAL_PAGE; ++i)
-  {
-    if (page_map[i].dirty == 0 &&
-        lru_time < page_map[i].time)
-    {
-      lru_time = page_map[i].time;
-      lru_ppn = i;
-    }
-  }
-
-  if (-1 != lru_ppn && lru_ppn < MAX_NUM_PHYSICAL_PAGE)
-  {
-    ppn = lru_ppn;
-
-    // reversed mapping
-    victim = page_map[ppn].pte4;
-
-    victim->pte_value = 0;
-    victim->present = 0;
-    victim->daddr = page_map[ppn].daddr;
-
-    // load page from disk to physical memory first
-    daddr = pte->daddr;
-    swap_in(pte->daddr, ppn);
-
-    pte->pte_value = 0;
-    pte->present = 1;
-    pte->ppn = ppn;
-    pte->dirty = 0;
-
-    page_map[ppn].allocated = 1;
-    page_map[ppn].time = 0;
-    page_map[ppn].dirty = 0;
-    page_map[ppn].pte4 = pte;
-    page_map[ppn].daddr = daddr;
-
-    return;
-  }
-
-  // 3. no free nor clean physical page: select one LRU victim
-  // write back (swap out) the DIRTY victim to disk
-  lru_ppn = -1;
-  lru_time = -1;
-  for (int i = 0; i < MAX_NUM_PHYSICAL_PAGE; ++i)
-  {
-    if (lru_time < page_map[i].time)
-    {
-      lru_time = page_map[i].time;
-      lru_ppn = i;
-    }
-  }
-
-  assert(0 <= lru_ppn && lru_ppn < MAX_NUM_PHYSICAL_PAGE);
-
-  ppn = lru_ppn;
-
-  // reversed mapping
-  victim = page_map[ppn].pte4;
-
-  // write back
-  swap_out(page_map[ppn].daddr, ppn);
-
-  victim->pte_value = 0;
-  victim->present = 0;
-  victim->daddr = page_map[ppn].daddr;
-
-  // load page from disk to physical memory first
-  daddr = pte->daddr;
-  swap_in(daddr, ppn);
-
-  pte->pte_value = 0;
-  pte->present = 1;
-  pte->ppn = ppn;
-  pte->dirty = 0;
-
-  page_map[ppn].allocated = 1;
-  page_map[ppn].time = 0;
-  page_map[ppn].dirty = 0;
-  page_map[ppn].pte4 = pte;
-  page_map[ppn].daddr = daddr;
-}
-
-
-// // Memory Management Unit 
+#endif
+// // Memory Management Unit
 // #include <stdio.h>
 // #include <stdlib.h>
 // #include <assert.h>
@@ -395,7 +220,7 @@ static void page_fault_handler(pte4_t *pte, address_t vaddr)
 
 // #define NUM_TLB_CACHE_LINE_PER_SET (8)
 
-// typedef struct 
+// typedef struct
 // {
 //     int valid;
 //     uint64_t tag;
@@ -419,7 +244,7 @@ static void page_fault_handler(pte4_t *pte, address_t vaddr)
 
 // static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr,
 //     int *free_tlb_line_index);
-// static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value, 
+// static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value,
 //     int free_tlb_line_index);
 
 // int swap_in(uint64_t saddr, uint64_t ppn);
@@ -470,7 +295,7 @@ static void page_fault_handler(pte4_t *pte, address_t vaddr)
 // }
 
 // #if defined(USE_TLB_HARDWARE) && defined(USE_PAGETABLE_VA2PA)
-// static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr, 
+// static int read_tlb(uint64_t vaddr_value, uint64_t *paddr_value_ptr,
 //     int *free_tlb_line_index)
 // {
 //     address_t vaddr = {
@@ -503,7 +328,7 @@ static void page_fault_handler(pte4_t *pte, address_t vaddr)
 //     return 0;
 // }
 
-// static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value, 
+// static int write_tlb(uint64_t vaddr_value, uint64_t paddr_value,
 //     int free_tlb_line_index)
 // {
 //     address_t vaddr = {

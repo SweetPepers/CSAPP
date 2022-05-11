@@ -872,3 +872,83 @@ TSS中拿到kstack的起始地址就可以获得进程的所有信息
 
 ### 3B异常控制流-系统调用、用户态进程、内核栈
 
+![syscall_read](../picture/3Bsyscall_read.jpg)
+
+先保存当前的rsp和rip(trap frame)
+
+然后保存用户态的寄存器(user frame)
+
+### 3C异常控制流-中断进行页错误处理
+
+保证一个进程不会永远获取CPU:timer
+
+进程
+
+![find_pgd_in_kernel](../picture/3CpageFault_with_interrupt.jpg)
+
+1. User.text  <-- rip
+2. mov  <-- rip
+3. MMU : cr3 (level 1)
+4. MMU : page walk > page fault
+5. CPU : page fault
+6. CPU : interrupt
+7. CPU : load TSS(kstack_rsp)
+8. CPU : jump to page fault handler
+9. RSP --> kstack --> thread_info --> pcb --> mm --> pgd
+10. pgd --> pud --> pmd --> pt
+11. schedule, context switch(new pcb->stack to TSS)
+12. Process 2 iret(kernel --> user)
+
+### 3D异常控制流-进程上下文切换
+
+![process_switch_context](../picture/3Dprocess_switch_context.jpg)
+
+### 3E异常控制流-进程页表的切换
+
+js 抽奖哈哈    太酷了
+
+1 rip <--> 1 TSS
+
+### 3F异常控制流-终端完结 : Nonlocal Jump实现缺页处理
+
+模拟器之中的过程
+- instruction_cycle
+  - mov_handler
+    - va2pa
+      - page_walk
+        - interrupt_stack_switching
+          - push_trapframe
+          - pagefult_handler
+            - software_push_userframe
+            - fix_pagefault
+            - os_schedule
+            - software_pop_userframe
+    - cpu_write64bits_dram
+    - increase_pc
+
+![pagefault_handler](../picture/3Fpagefault_handler.jpg)
+
+但是在最下层schedule中发生了进程切换, 后面的dram_write和increase_pc都是对另外一个进程状态的操作 (其实也不应该increase_pc, 应该要重新执行)
+
+call 1 time  
+
+never return
+
+
+3 interrupt  
+handler 之后直接跟着 iret
+- 1. time 发生在指令之间
+- 2. syscall 
+- 3. page fault
+
+![time_interrupt](../picture/3Ftime_interrupt.jpg)
+
+![syscall_interrupt](../picture/3Fsyscall_interrupt.jpg)
+
+solve --> Nonlocal Jump
+
+### 40Fork的前夜-进程缺页处理的代码
+
+fix pagefault
+- present : page table store the ppn, and swap addr is stored in page map
+- not present in DRAM : swap addr is stored in pte

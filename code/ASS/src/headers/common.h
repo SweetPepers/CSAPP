@@ -11,7 +11,7 @@
 #define DEBUG_MMU                   (0x20)
 #define DEBUG_LOADER                (0x80)
 #define DEBUG_PARSEINST             (0x100)
-
+#define DEBUG_LINKER                (0x200)
 #define DEBUG_VERBOSE_SET           (0x241)
 
 // do page walk

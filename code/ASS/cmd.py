@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# usage: 
+# usage:
 #   ./cmd.py argv[1] argv[2], ...
 #   /usr/bin/python3 ./cmd.py argv[1] argv[2], ...
 import sys
@@ -16,18 +16,22 @@ print("================")
 
 # file headers contains copyright information
 notification = "/* BCST - Introduction to Computer Systems\n" \
-" * Author:      yangminz@outlook.com\n" \
-" * Github:      https://github.com/yangminz/bcst_csapp\n" \
-" * Bilibili:    https://space.bilibili.com/4564101\n" \
-" * Zhihu:       https://www.zhihu.com/people/zhao-yang-min\n" \
-" * This project (code repository and videos) is exclusively owned by yangminz \n" \
-" * and shall not be used for commercial and profitting purpose \n" \
-" * without yangminz's permission.\n" \
-" */\n\n"
+    " * Author:      yangminz@outlook.com\n" \
+    " * Github:      https://github.com/yangminz/bcst_csapp\n" \
+    " * Bilibili:    https://space.bilibili.com/4564101\n" \
+    " * Zhihu:       https://www.zhihu.com/people/zhao-yang-min\n" \
+    " * This project (code repository and videos) is exclusively owned by yangminz \n" \
+    " * and shall not be used for commercial and profitting purpose \n" \
+    " * without yangminz's permission.\n" \
+    " */\n\n"
+
 
 def make_build_directory():
     if not os.path.isdir("./bin/"):
         os.mkdir("./bin/")
+    if not os.path.isdir("./files/swap/"):
+        os.mkdir("./files/swap/")
+
 
 def add_copyright_header():
     # get files with paths
@@ -37,7 +41,7 @@ def add_copyright_header():
     print("recursively add lines to every .c and .h file")
     for filename in filelist:
         try:
-            with open(filename, "r", encoding = 'ascii') as fr:
+            with open(filename, "r", encoding='ascii') as fr:
                 content = fr.read()
                 if (content.startswith("/* BCST - Introduction to Computer Systems")):
                     print("\tskip\t%s" % filename)
@@ -48,11 +52,12 @@ def add_copyright_header():
                     # reopen and write data: this is a safer approach
                     # try to not open in r+ mode
                     print("\tprepend\t%s" % filename)
-                    with open(filename, "w", encoding = 'ascii') as fw:
+                    with open(filename, "w", encoding='ascii') as fw:
                         fw.write(notification + content)
                         fw.close()
         except UnicodeDecodeError:
             print(filename)
+
 
 def format_include(s, line_index):
     a = "#include<headers/"
@@ -72,10 +77,12 @@ def format_include(s, line_index):
     elif s.startswith(b):
         s = "#include <" + s[len(b):]
         update = True
-    
+
     if update:
-        print("\tline [%d] #include rule: \"%s\" ==> \"%s\"" % (line_index, old, s))
+        print("\tline [%d] #include rule: \"%s\" ==> \"%s\"" %
+              (line_index, old, s))
     return s
+
 
 def format_marco(s, line_index):
     a = s.strip("\n")
@@ -88,12 +95,14 @@ def format_marco(s, line_index):
         return a
     return s
 
+
 def format_tag(s, line_index):
     a = s.strip("\n")
     a = a.strip(" ")
     if (len(a) >= 1 and a[len(a) - 1] == ";"):
         return s
-    charset = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_" }
+    charset = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+               "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_"}
     for i in range(len(a) - 1):
         if not a[i] in charset:
             return s
@@ -105,6 +114,7 @@ def format_tag(s, line_index):
         return a
     return s
 
+
 def format_whiteline(s, line_index):
     space = 0
     for c in s:
@@ -115,6 +125,7 @@ def format_whiteline(s, line_index):
         # print("\tline [%d] white line rule: delete" % (line_index))
     return s
 
+
 def format_code():
     # get files with paths
     filelist = list(Path(".").rglob("*.[ch]"))
@@ -122,7 +133,7 @@ def format_code():
     print("recursively check every .c and file")
     for filename in filelist:
         try:
-            with open(filename, "r", encoding = 'ascii') as fr:
+            with open(filename, "r", encoding='ascii') as fr:
                 content = fr.readlines()
                 print(filename, ":")
                 for i in range(len(content)):
@@ -133,11 +144,12 @@ def format_code():
                 fr.close()
                 # reopen and write data: this is a safer approach
                 # try to not open in r+ mode
-                with open(filename, "w", encoding = 'ascii') as fw:
+                with open(filename, "w", encoding='ascii') as fw:
                     fw.writelines(content)
                     fw.close()
         except UnicodeDecodeError:
             print(filename)
+
 
 def count_lines():
     # get files with paths
@@ -158,7 +170,7 @@ def count_lines():
             maxfilename = len(str(filename))
     # print result
     print("count .c and .h file lines:")
-    sortedlist = sorted(name_count, key = lambda x: x[1], reverse=True)
+    sortedlist = sorted(name_count, key=lambda x: x[1], reverse=True)
     for [filename, count] in sortedlist:
         print(filename, end="")
         n = (int(maxfilename / 4) + 1) * 4
@@ -167,207 +179,257 @@ def count_lines():
         print(count)
     print("\nTotal:", total_count)
 
+
 def build(key):
     make_build_directory()
     gcc_map = {
-        "isa" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function", "-Wno-unused-variable",
-                    "-I", "./src",
-                    "-DDEBUG_INSTRUCTION_CYCLE",
-                    "./src/common/convert.c",
-                    "./src/common/cleanup.c",
-                    "./src/algorithm/hashtable.c",
-                    "./src/algorithm/trie.c",
-                    "./src/algorithm/array.c",
-                    "./src/hardware/cpu/isa.c",
-                    "./src/hardware/cpu/mmu.c",
-                    "./src/hardware/memory/dram.c",
-                    "./src/tests/test_run_isa.c",
-                    "-o", "./bin/run_isa"
-                ]
+        "isa": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function", "-Wno-unused-variable",
+                "-I", "./src",
+                "-DDEBUG_INSTRUCTION_CYCLE",
+                "./src/common/convert.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/trie.c",
+                "./src/algorithm/array.c",
+                "./src/hardware/cpu/isa.c",
+                "./src/hardware/cpu/mmu.c",
+                "./src/hardware/memory/dram.c",
+                "./src/tests/test_run_isa.c",
+                "-o", "./bin/run_isa"
+            ]
+        ],
+        "int": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_INSTRUCTION_CYCLE",
+                # "-DUSE_SRAM_CACHE",
+                "-DUSE_NAVIE_VA2PA",
+                "./src/common/convert.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/trie.c",
+                "./src/algorithm/array.c",
+                "./src/hardware/cpu/isa.c",
+                "./src/hardware/cpu/mmu.c",
+                "./src/hardware/cpu/inst.c",
+                # "./src/hardware/cpu/sram.c",
+                "./src/hardware/cpu/interrupt.c",
+                "./src/hardware/memory/dram.c",
+                # "./src/hardware/memory/swap.c",
+                "./src/process/syscall.c",
+                "./src/process/schedule.c",
+                "./src/tests/test_run_isa.c",
+                "-o", "./bin/run_isa"
+            ]
+        ],
+        "ctx": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_INSTRUCTION_CYCLE",
+                # "-DUSE_SRAM_CACHE",
+                # "-DUSE_NAVIE_VA2PA",
+                "-DUSE_PAGETABLE_VA2PA",
+                "./src/common/convert.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/trie.c",
+                "./src/algorithm/array.c",
+                "./src/hardware/cpu/isa.c",
+                "./src/hardware/cpu/mmu.c",
+                "./src/hardware/cpu/inst.c",
+                # "./src/hardware/cpu/sram.c",
+                "./src/hardware/cpu/interrupt.c",
+                "./src/hardware/memory/dram.c",
+                "./src/hardware/memory/swap.c",
+                "./src/process/syscall.c",
+                "./src/process/schedule.c",
+                "./src/process/pagefault.c",
+                "./src/tests/test_context.c",
+                "-o", "./bin/ctx"
+            ]
+        ],
+        "pgf": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_INSTRUCTION_CYCLE",
+                # "-DUSE_SRAM_CACHE",
+                # "-DUSE_NAVIE_VA2PA",
+                "-DUSE_PAGETABLE_VA2PA",
+                "./src/common/convert.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/trie.c",
+                "./src/algorithm/array.c",
+                "./src/hardware/cpu/isa.c",
+                "./src/hardware/cpu/mmu.c",
+                "./src/hardware/cpu/inst.c",
+                # "./src/hardware/cpu/sram.c",
+                "./src/hardware/cpu/interrupt.c",
+                "./src/hardware/memory/dram.c",
+                "./src/hardware/memory/swap.c",
+                "./src/process/syscall.c",
+                "./src/process/schedule.c",
+                "./src/process/pagefault.c",
+                "./src/tests/test_pagefault.c",
+                "-o", "./bin/pgf"
+            ]
+        ],
+        "inst": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function", "-Wno-unused-variable",
+                "-I", "./src",
+                "-DDEBUG_INSTRUCTION_CYCLE",
+                "./src/common/convert.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/trie.c",
+                "./src/algorithm/array.c",
+                "./src/hardware/cpu/inst.c",
+                "./src/tests/test_inst.c",
+                "-o", "./bin/test_inst"
             ],
-        "int" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-DDEBUG_INSTRUCTION_CYCLE",
-                    # "-DDEBUG_ENABLE_SRAM_CACHE",
-                    "-DUSE_NAVIE_VA2PA",
-                    "./src/common/convert.c",
-                    "./src/common/cleanup.c",
-                    "./src/algorithm/hashtable.c",
-                    "./src/algorithm/trie.c",
-                    "./src/algorithm/array.c",
-                    "./src/hardware/cpu/isa.c",
-                    "./src/hardware/cpu/mmu.c",
-                    "./src/hardware/cpu/inst.c",
-                    # "./src/hardware/cpu/sram.c",
-                    "./src/hardware/cpu/interrupt.c",
-                    "./src/hardware/memory/dram.c",
-                    "./src/hardware/memory/swap.c",
-                    "./src/process/syscall.c",
-                    "./src/tests/test_run_isa.c",
-                    "-o", "./bin/run_isa"
-                ]
+        ],
+        "link": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function",
+                "-I", "./src",
+                "-shared", "-fPIC",
+                "./src/common/convert.c",
+                "./src/algorithm/array.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/linkedlist.c",
+                "./src/linker/parseElf.c",
+                "./src/linker/staticlink.c",
+                "-o", "./bin/staticLinker.so"
             ],
-        "inst" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function", "-Wno-unused-variable",
-                    "-I", "./src",
-                    "-DDEBUG_INSTRUCTION_CYCLE",
-                    "./src/common/convert.c",
-                    "./src/common/cleanup.c",
-                    "./src/algorithm/hashtable.c",
-                    "./src/algorithm/trie.c",
-                    "./src/algorithm/array.c",
-                    "./src/hardware/cpu/inst.c",
-                    "./src/tests/test_inst.c",
-                    "-o", "./bin/test_inst"
-                ],
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function",
+                "-I", "./src",
+                # "-DDEBUG_LINK",
+                "./src/common/convert.c",
+                "./src/algorithm/array.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/linkedlist.c",
+                "./src/linker/linker.c",
+                "-ldl", "-o", "./bin/link"
             ],
-        "link" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-shared", "-fPIC",
-                    "./src/common/convert.c",
-                    "./src/common/cleanup.c",
-                    "./src/algorithm/array.c",
-                    "./src/algorithm/hashtable.c",
-                    "./src/algorithm/linkedlist.c",
-                    "./src/linker/parseElf.c",
-                    "./src/linker/staticlink.c",
-                    "-o", "./bin/staticLinker.so"
-                ],
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-function",
-                    "-I", "./src",
-                    # "-DDEBUG_LINK",
-                    "./src/common/convert.c",
-                    "./src/common/cleanup.c",
-                    "./src/algorithm/array.c",
-                    "./src/algorithm/hashtable.c",
-                    "./src/algorithm/linkedlist.c",
-                    "./src/linker/linker.c", 
-                    "-ldl", "-o", "./bin/link"
-                ],
+        ],
+        "elf": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99",
+                "-Wno-unused-function",
+                "-Wno-unused-but-set-variable",
+                "-I", "./src",
+                "-DDEBUG_PARSE_ELF",
+                "-DDEBUG_LINK",
+                "./src/common/convert.c",
+                "./src/algorithm/array.c",
+                "./src/algorithm/hashtable.c",
+                "./src/algorithm/linkedlist.c",
+                "./src/linker/parseElf.c",
+                "-o", "./bin/elf"
             ],
-        "elf" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", 
-                    "-Wno-unused-function",
-                    "-Wno-unused-but-set-variable",
-                    "-I", "./src",
-                    "-DDEBUG_PARSE_ELF",
-                    "-DDEBUG_LINK",
-                    "./src/common/convert.c",
-                    "./src/common/cleanup.c",
-                    "./src/algorithm/array.c",
-                    "./src/algorithm/hashtable.c",
-                    "./src/algorithm/linkedlist.c",
-                    "./src/linker/parseElf.c",
-                    "-o", "./bin/elf"
-                ],
+        ],
+        "mesi": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable",
+                "-I", "./src",
+                # "-DDEBUG",
+                "./src/mains/mesi.c",
+                "-o", "./bin/mesi"
             ],
-        "mesi" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable",
-                    "-I", "./src",
-                    # "-DDEBUG",
-                    "./src/mains/mesi.c",
-                    "-o", "./bin/mesi"
-                ],
+        ],
+        "false_sharing": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable",
+                "-I", "./src",
+                "-pthread",
+                "./src/mains/false_sharing.c",
+                "-o", "./bin/false_sharing"
             ],
-        "false_sharing" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable",
-                    "-I", "./src",
-                    "-pthread",
-                    "./src/mains/false_sharing.c",
-                    "-o", "./bin/false_sharing"
-                ],
+        ],
+        "rbt": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_REDBLACK",
+                "./src/common/convert.c",
+                "./src/algorithm/bst.c",
+                "./src/algorithm/rbt.c",
+                "./src/tests/test_rbt.c",
+                "-o", "./bin/rbt"
             ],
-        "rbt" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-DDEBUG_REDBLACK",
-                    "./src/common/convert.c",
-                    "./src/algorithm/bst.c",
-                    "./src/algorithm/rbt.c",
-                    "./src/tests/test_rbt.c",
-                    "-o", "./bin/rbt"
-                ],
+        ],
+        "trie": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_TRIE",
+                "./src/algorithm/trie.c", "./src/algorithm/hashtable.c",
+                "./src/tests/test_trie.c",
+                "-o", "./bin/trie"
             ],
-        "trie" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-DDEBUG_TRIE",
-                    "./src/algorithm/trie.c", "./src/algorithm/hashtable.c",
-                    "./src/tests/test_trie.c",
-                    "-o", "./bin/trie"
-                ],
+        ],
+        "bst": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_BST",
+                "./src/algorithm/bst.c",
+                "./src/common/convert.c",
+                "./src/tests/test_bst.c",
+                "-o", "./bin/bst"
             ],
-        "bst" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-DDEBUG_BST",
-                    "./src/algorithm/bst.c",
-                    "./src/common/convert.c",
-                    "./src/tests/test_bst.c",
-                    "-o", "./bin/bst"
-                ],
+        ],
+        "malloc": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_MALLOC",
+                # "-DIMPLICIT_FREE_LIST",
+                # "-DEXPLICIT_FREE_LIST",
+                "-DREDBLACK_TREE",
+                "./src/common/convert.c",
+                "./src/algorithm/linkedlist.c",
+                "./src/algorithm/bst.c",
+                "./src/algorithm/rbt.c",
+                "./src/malloc/block.c",
+                "./src/malloc/small_list.c",
+                "./src/malloc/implicit_list.c",
+                "./src/malloc/explicit_list.c",
+                "./src/malloc/segregated_list.c",
+                "./src/malloc/redblack_tree.c",
+                "./src/malloc/mem_alloc.c",
+                "./src/tests/test_malloc.c",
+                "-o", "./bin/malloc"
             ],
-        "malloc" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-DDEBUG_MALLOC",
-                    # "-DIMPLICIT_FREE_LIST",
-                    # "-DEXPLICIT_FREE_LIST",
-                    "-DREDBLACK_TREE",
-                    "./src/common/convert.c",
-                    "./src/algorithm/linkedlist.c",
-                    "./src/algorithm/bst.c",
-                    "./src/algorithm/rbt.c",
-                    "./src/malloc/block.c", 
-                    "./src/malloc/small_list.c", 
-                    "./src/malloc/implicit_list.c", 
-                    "./src/malloc/explicit_list.c", 
-                    "./src/malloc/segregated_list.c", 
-                    "./src/malloc/redblack_tree.c",
-                    "./src/malloc/mem_alloc.c",
-                    "./src/tests/test_malloc.c",
-                    "-o", "./bin/malloc"
-                ],
+        ],
+        "convert": [
+            [
+                "/usr/bin/gcc",
+                "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
+                "-I", "./src",
+                "-DDEBUG_BST",
+                "-DDEBUG_STRING2UINT",
+                "./src/common/convert.c",
+                "./src/tests/test_convert.c",
+                "-o", "./bin/convert"
             ],
-        "convert" : [
-                [
-                    "/usr/bin/gcc", 
-                    "-Wall", "-g", "-O0", "-Werror", "-std=gnu99", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function",
-                    "-I", "./src",
-                    "-DDEBUG_BST",
-                    "-DDEBUG_STRING2UINT",
-                    "./src/common/convert.c",
-                    "./src/tests/test_convert.c",
-                    "-o", "./bin/convert"
-                ],
-            ],
+        ],
     }
 
     if not key in gcc_map:
@@ -376,50 +438,57 @@ def build(key):
     for command in gcc_map[key]:
         subprocess.run(command)
 
+
 def run(key):
     assert(os.path.isdir("./bin/"))
     bin_map = {
-        "inst" : ["./bin/test_inst"],
-        "isa" : ["./bin/run_isa"],
-        "int" : ["./bin/run_isa"],
-        "elf" : ["./bin/elf"],
-        "link" : ["./bin/link", "main", "sum", "-o", "output"],
-        "mesi" : ["./bin/mesi"],
-        "false_sharing" : ["./bin/false_sharing"],
-        "rbt" : ["./bin/rbt"],
-        "trie" : ["./bin/trie"],
-        "bst" : ["./bin/bst"],
-        "malloc" : ["./bin/malloc"],
-        "convert" : ["./bin/convert"],
+        "inst": ["./bin/test_inst"],
+        "isa": ["./bin/run_isa"],
+        "int": ["./bin/run_isa"],
+        "elf": ["./bin/elf"],
+        "link": ["./bin/link", "main", "sum", "-o", "output"],
+        "mesi": ["./bin/mesi"],
+        "false_sharing": ["./bin/false_sharing"],
+        "rbt": ["./bin/rbt"],
+        "trie": ["./bin/trie"],
+        "bst": ["./bin/bst"],
+        "malloc": ["./bin/malloc"],
+        "convert": ["./bin/convert"],
+        "ctx": ["./bin/ctx"],
+        "pgf": ["./bin/pgf"],
     }
     if not key in bin_map:
         print("input the correct binary key:", bin_map.keys())
         exit()
     subprocess.run(bin_map[key])
+
 
 def debug(key):
     assert(os.path.isdir("./bin/"))
     gdb = "/usr/bin/gdb"
     bin_map = {
-        "isa" : [gdb, "./bin/run_isa"],
-        "int" : [gdb, "./bin/run_isa"],
-        "link" : [gdb, "--args", "./bin/link", "main", "sum", "-o", "output"],
-        "malloc" : [gdb, "./bin/malloc"],
-        "bst" : [gdb, "./bin/bst"],
-        "rbt" : [gdb, "./bin/rbt"],
-        "trie" : [gdb, "./bin/trie"],
-        "inst" : [gdb, "./bin/test_inst"],
+        "isa": [gdb, "./bin/run_isa"],
+        "int": [gdb, "./bin/run_isa"],
+        "link": [gdb, "--args", "./bin/link", "main", "sum", "-o", "output"],
+        "malloc": [gdb, "./bin/malloc"],
+        "bst": [gdb, "./bin/bst"],
+        "rbt": [gdb, "./bin/rbt"],
+        "trie": [gdb, "./bin/trie"],
+        "inst": [gdb, "./bin/test_inst"],
+        "ctx": [gdb, "./bin/ctx"],
+        "pgf": [gdb, "./bin/pgf"],
     }
     if not key in bin_map:
         print("input the correct binary key:", bin_map.keys())
         exit()
     subprocess.run(bin_map[key])
 
+
 def mem_check(key):
     assert(os.path.isdir("./bin/"))
     bin_map = {
-        "isa" : ["./bin/ut_isa"],
-        "link" : ["./bin/link", "main", "sum", "-o", "output"]
+        "isa": ["./bin/ut_isa"],
+        "link": ["./bin/link", "main", "sum", "-o", "output"]
     }
     if not key in bin_map:
         print("input the correct memory check key:", bin_map.keys())
@@ -428,6 +497,7 @@ def mem_check(key):
         "/usr/bin/valgrind",
         "--tool=memcheck",
         "--leak-check=full"] + bin_map[key])
+
 
 def cache_verify():
     make_build_directory()
@@ -439,16 +509,16 @@ def cache_verify():
 
     test_cases = [
         # s E b
-        [   2,  1,      2,  "wide.trace"    ],
-        [   3,  2,      2,  "load.trace"    ],
-        [   1,  1,      1,  "yi2.trace"     ],
-        [   4,  2,      4,  "yi.trace"      ],
-        [   2,  1,      4,  "dave.trace"    ],
-        [   2,  1,      3,  "trans.trace"   ],
-        [   2,  2,      3,  "trans.trace"   ],
-        [   14, 1024,   3,  "trans.trace"   ],
-        [   5,  1,      5,  "trans.trace"   ],
-        [   5,  1,      5,  "long.trace"    ],
+        [2,  1,      2,  "wide.trace"],
+        [3,  2,      2,  "load.trace"],
+        [1,  1,      1,  "yi2.trace"],
+        [4,  2,      4,  "yi.trace"],
+        [2,  1,      4,  "dave.trace"],
+        [2,  1,      3,  "trans.trace"],
+        [2,  2,      3,  "trans.trace"],
+        [14, 1024,   3,  "trans.trace"],
+        [5,  1,      5,  "trans.trace"],
+        [5,  1,      5,  "long.trace"],
     ]
 
     for [s, E, b, file] in test_cases:
@@ -463,6 +533,7 @@ def cache_verify():
         ]
         print(" ".join(a))
         subprocess.run(a)
+
 
 # main
 assert(len(sys.argv) >= 2)

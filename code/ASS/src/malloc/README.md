@@ -14,7 +14,7 @@
 
 ## 对比Stack与Heap
 
-- 关于Stack中函数调用的Frame，它的大小是什么时期确定的？编译时期（Compile-Time），还是运行时期（Run-Time）？
+-   关于Stack中函数调用的Frame，它的大小是什么时期确定的？编译时期（Compile-Time），还是运行时期（Run-Time）？
 
 -   在Stack上为数据分配内存，我们需要在什么阶段确定数据的大小？Compile-Time还是Run-Time？
 

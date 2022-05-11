@@ -10,6 +10,7 @@
 #define MAX_INDEX_PHYSICAL_PAGE (15)
 #define MAX_NUM_PHYSICAL_PAGE (16)
 #define PAGE_TABLE_ENTRY_NUMBER (512)
+#define PAGE_SIZE (4096)
 
 uint8_t pm[PHYSICAL_MEMROY_SPACE];
 
@@ -73,7 +74,7 @@ typedef union{
   };
   struct{
     uint64_t _present      :1;
-    uint64_t daddr         :63;//disk address
+    uint64_t saddr         :63;//disk address   --> swap address
   };
 }pte4_t;  //PT
 
@@ -86,7 +87,7 @@ typedef struct{
   int dirty;
   int time;  //LRU cache
 
-  uint64_t daddr;  //binding the reverse mapping with mapping to disk 
+  uint64_t saddr;  //binding the reverse mapping with mapping to disk 
 }pd_t;
 
 //for each swapable physical page, create one mapping

@@ -244,8 +244,8 @@ typedef union
 } cpu_pc_t;
 cpu_pc_t cpu_pc;
 
-// pointing to Task-state-segment(in main memory) of the current process
-uint64_t cpu_task_register;
+// // pointing to Task-state-segment(in main memory) of the current process
+// uint64_t cpu_task_register;
 
 // control registers
 typedef struct
@@ -258,6 +258,18 @@ typedef struct
                     // (by malloc())
 } cpu_cr_t;
 cpu_cr_t cpu_controls;
+
+//only use stack0 of TSS
+//stored in main memory
+typedef struct TSS_S0{
+  uint64_t ESP0;
+  uint64_t SS0;
+} tss_s0_t;
+// TSS are stored in DRAM
+// Intel thinks that each process can have its own TSS.
+// But we can use only one TSS globally.
+// pointing to Task-State Segment (in main memory) of the current process
+tss_s0_t tr_global_tss;
 
 // move to common.h to be shared by linker
 #define NUM_INSTRTYPE 14
@@ -275,5 +287,6 @@ void instruction_cycle();
 // each MMU is owned by each core
 uint64_t va2pa(uint64_t vaddr);
 
+uint64_t mmu_vaddr_pagefault;
 // end of include guard
 #endif

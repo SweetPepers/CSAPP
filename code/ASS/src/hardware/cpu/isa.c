@@ -36,9 +36,8 @@ void mov_handler(od_t *src_od, od_t *dst_od)
   {
     // src: register
     // dst: virtual address
-    cpu_write64bits_dram(
-        va2pa((dst_od->value)),
-        *(uint64_t *)(src_od->value));
+    uint64_t dst_pa = va2pa(dst_od->value);
+    cpu_write64bits_dram(dst_pa, *(uint64_t *)(src_od->value));
     increase_pc();
     cpu_flags.__flags_value = 0;
     return;
@@ -70,9 +69,8 @@ void push_handler(od_t *src_od, od_t *dst_od)
     // src: register
     // dst: empty
     cpu_reg.rsp = cpu_reg.rsp - 8;
-    cpu_write64bits_dram(
-        va2pa(cpu_reg.rsp),
-        *(uint64_t *)(src_od->value));
+    uint64_t reg_pa = va2pa(cpu_reg.rsp);
+    cpu_write64bits_dram(reg_pa, *(uint64_t *)(src_od->value));
     increase_pc();
     cpu_flags.__flags_value = 0;
     return;
@@ -115,9 +113,8 @@ void call_handler(od_t *src_od, od_t *dst_od)
   // dst: empty
   // push the return value
   cpu_reg.rsp = cpu_reg.rsp - 8;
-  cpu_write64bits_dram(
-      va2pa(cpu_reg.rsp),
-      cpu_pc.rip + sizeof(char) * MAX_INSTRUCTION_CHAR);
+  uint64_t reg_pa = va2pa(cpu_reg.rsp);
+  cpu_write64bits_dram(reg_pa, cpu_pc.rip + sizeof(char) * MAX_INSTRUCTION_CHAR);
   // jump to target function address
   // TODO: support PC relative addressing
   cpu_pc.rip = (src_od->value);
@@ -261,21 +258,40 @@ void lea_handler(od_t *src_od, od_t *dst_od)
 
 void int_handler(od_t *src_od, od_t *dst_od)
 {
+    // src: interrupt vector
   if (src_od->type == OD_IMM)
   {
-    // src: interrupt vector
-    call_interrupt_stack_switching((src_od->value));
+    // increase_pc here:
+    // interrupt will cause OS's scheduling to another process. 
+    // so this "int_handler" will not return 
+    // when the execution of process 1 resumed , the syscall 
+    // to execute the next instruction , so RIP pushed to must be the next instruction
+    increase_pc();
+    cpu_flags.__flags_value = 0;
+    // this func will not return.
+    interrupt_stack_switching((src_od->value));
   }
-  increase_pc();
 }
 
 // from inst.c
 void parse_instruction(char *inst_str, inst_t *inst);
 
+
+static uint64_t global_time = 0;
+static uint64_t timer_period = 5;
+
 // instruction cycle is implemented in CPU
 // the only exposed interface outside CPU
 void instruction_cycle()
 {
+  // the entry of the re-execution of interrupt return instruction
+  // when a new process is scheduled, the first instruction/ return instruction should start here,
+  // jumping out of the call stack of old process
+  // this is especially useful for page fault handling  
+
+  setjmp(USER_INSTRUCTION_ON_IRET);
+
+  global_time ++ ;
   // FETCH: get the instruction string by program counter
   char inst_str[MAX_INSTRUCTION_CHAR + 10];
   cpu_readinst_dram(va2pa(cpu_pc.rip), inst_str);
@@ -291,7 +307,13 @@ void instruction_cycle()
   // EXECUTE: get the function pointer or handler by the operator
   // update CPU and memory according the instruction
   inst.op(&(inst.src), &(inst.dst));
-
-  // TODO: check interrupt from APIC
   // TODOL check page fault from the executed instruction
+
+  // check timer interrupt from APIC
+  if( global_time % timer_period == 0){
+    interrupt_stack_switching(0x81);
+    printf("atter timer interrupt\n"); // this line will not be executed  
+  }
+  
+
 }
