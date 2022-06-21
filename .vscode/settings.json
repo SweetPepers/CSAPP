@@ -6,7 +6,8 @@
     "*.wxml": "html",
     "*.wxss": "css",
     "cstdint": "cpp",
-    "type_traits": "c"
+    "type_traits": "c",
+    "common.h": "c"
   },
   "python.pythonPath": "D:\\Python3.7.6\\python.exe"
 }

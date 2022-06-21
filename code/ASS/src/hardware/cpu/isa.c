@@ -317,3 +317,10 @@ void instruction_cycle()
   
 
 }
+
+
+
+// TODO :: finish nop
+void nop_handler(od_t *src_od, od_t *dst_od){
+
+}

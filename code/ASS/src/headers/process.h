@@ -39,11 +39,11 @@ typedef struct PROCESS_CONTROL_BLOCK_STRUCT{
   uint64_t rsp; 
   struct PROCESS_CONTROL_BLOCK_STRUCT * next;
   struct PROCESS_CONTROL_BLOCK_STRUCT * prev;
-  context
+  context_t context;
 }pcb_t;
 
 typedef struct STRUCT_PROCESS_CONTEXT{
-  cpu_reg_t general_registers;
+  cpu_reg_t regs;
   cpu_flags_t flags;
 }context_t;
 

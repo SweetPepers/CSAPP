@@ -1,7 +1,7 @@
 # csapp note
+[TOC]
 
-## 1.信息的表示和处理
-
+## 1 信息的表示和处理
 ### 00 无符号整数，二进制补码
 
 - 1. 内存分块
@@ -149,6 +149,7 @@ the standard is set by IEEE
   数学上等价的
  说实话   没听懂
 
+## 2链接
 ### 0F 链接ELF头部
 
 - 标准程序std  0<=p<n
@@ -330,7 +331,7 @@ value = f3 0f 1e fa 55 48 89 e5  90 5d c3
 
 ### 12 链接-符号Bind,Type,Index
 
-  `st_info  unsigned char 8Byte`
+  `st_info  unsigned char` 8Byte
 
 - 高4位为 bind
 - 低3位为 type
@@ -400,7 +401,7 @@ long long a = 2147483648;//y.c
 ### 19 链接总结
 
 替换(lambda表达式类似)->编译
-
+## 内存
 ### 1A  内存问题简介:层次,一致性,虚拟内存
 
 - cache  
@@ -704,7 +705,7 @@ rbt内存堆内结构
 ![small_list](../picture/32smalllist.png)
 
 ![d堆](../picture/32d堆.png)
-
+## 垃圾回收
 ### 33 垃圾回收-引用计数
 
 回顾alloc
@@ -812,7 +813,8 @@ generational GC
 - native object 
   - c/cpp  不知道对象的具体类型
   - 听不懂  TODO再来一遍
-
+  
+## 异常控制流
 ### 37 异常控制流-同步的Fault、系统调用, 异步的中断
 
 ECF
@@ -952,3 +954,23 @@ solve --> Nonlocal Jump
 fix pagefault
 - present : page table store the ppn, and swap addr is stored in page map
 - not present in DRAM : swap addr is stored in pte
+
+
+
+### 41Fork创建进程,一次调用,返回两次
+
+初始0号进程  
+
+
+fork  除了 pid 什么都没改
+ 修改 rax(返回值)
+
+![](../picture/41fork.jpg)
+
+
+最后哪些 不同
+- PID
+- page addr <-  PCB
+- CTX {RAX} (return to user mode)
+
+$ 2^n $ : fork bomb

@@ -7,6 +7,7 @@
 #include "headers/cpu.h"
 #include "headers/interrupt.h"
 #include "headers/memory.h"
+#include "headers/syscall.h"
 
 typedef void (*syscall_handler_t)();
 
@@ -29,7 +30,7 @@ static void wait_handler();
 static void kill_handler();
 
 
-static void distroy_user_registers()
+static void destroy_user_registers()
 {
   // when run kernel context, user registers should be useless (except rsp)
   
@@ -74,6 +75,9 @@ static void getpid_handler()
 
 static void fork_handler()
 {
+  destroy_user_registers();
+
+  syscall_fork();
 
 }
 static void execve_handler()
