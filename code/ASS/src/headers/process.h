@@ -37,9 +37,9 @@ typedef struct PROCESS_CONTROL_BLOCK_STRUCT{
   }mm;
   kstack_t * kstack;
   uint64_t rsp; 
+  context_t context;
   struct PROCESS_CONTROL_BLOCK_STRUCT * next;
   struct PROCESS_CONTROL_BLOCK_STRUCT * prev;
-  context_t context;
 }pcb_t;
 
 typedef struct STRUCT_PROCESS_CONTEXT{

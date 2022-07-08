@@ -30,8 +30,9 @@ static void push_context()
   // store user frame to kstack
   rsp -= ctx_size;
   context_t ctx = {
-      .general_registers = cpu_reg,
-      .flags = cpu_flags};
+      .regs = cpu_reg,
+      .flags = cpu_flags
+      };
   memcpy((user_frame_t *)rsp, &ctx, ctx_size);
 
   // push RSP
@@ -72,39 +73,85 @@ static void pop_context()
 }
 
 
-void os_schedule(){
+// void os_schedule(){
 
-  uint64_t rsp = cpu_reg.rsp;
-  uint64_t kstack_bottom_vaddr = (rsp >> 13) << 13 + KERNEL_STACK_SIZE;
+//   uint64_t rsp = cpu_reg.rsp;
+//   uint64_t kstack_bottom_vaddr = (rsp >> 13) << 13 + KERNEL_STACK_SIZE;
   
-  kstack_t *kstack_old = (kstack_t *)kstack_bottom_vaddr;
-  pcb_t *pcb_old = kstack_old->threadinfo.pcb;
+//   kstack_t *kstack_old = (kstack_t *)kstack_bottom_vaddr;
+//   pcb_t *pcb_old = kstack_old->threadinfo.pcb;
 
 
-  // pcb_new should be selected by scheduling algorithm
-  // TODO
-  pcb_t *pcb_new = pcb_old->next;
+//   // pcb_new should be selected by scheduling algorithm
+//   // TODO
+//   pcb_t *pcb_new = pcb_old->next;
 
-  //context switch 
-  //store the context of the old process(kernel mode)
+//   //context switch 
+//   //store the context of the old process(kernel mode)
 
-  // this push will push the context of the old process
-  push_context();
+//   // this push will push the context of the old process
+//   push_context();
 
-  cpu_reg.rsp = pcb_new->rsp;
+//   cpu_reg.rsp = pcb_new->rsp;
 
-  // restore the context of the new process
-  pop_context();
+//   // restore the context of the new process
+//   pop_context();
   
-  // TODO : update TR -> TSS
-  // update CR3 -> page table in MMU
-  cpu_controls.cr3 = pcb_new->mm.pgd_paddr;
-  return;
-}
+//   // TODO : update TR -> TSS
+//   // update CR3 -> page table in MMU
+//   cpu_controls.cr3 = pcb_new->mm.pgd_paddr;
+//   return;
+// }
 
 pcb_t *get_current_pcb()
 {
     kstack_t *ks = (kstack_t *)get_kstack_RSP();
     pcb_t *current_pcb = ks->threadinfo.pcb;
     return current_pcb;
+}
+
+
+static void store_context(pcb_t *proc)
+{
+    context_t ctx = {
+        .regs = cpu_reg,
+        .flags = cpu_flags
+    };
+    // Be especially careful that RSP is stored as context
+    // And RIP is not restored as context!!!
+    memcpy(&(proc->context), &ctx, sizeof(context_t));
+}
+
+static void restore_context(pcb_t *proc)
+{
+    // restore cpu registers from user frame
+    memcpy(&cpu_reg, &(proc->context.regs), sizeof(cpu_reg_t));
+    memcpy(&cpu_flags, &(proc->context.flags), sizeof(cpu_flags_t));
+}
+
+void os_schedule()
+{
+    // The magic is: RIP is not updated at all
+    // only kstack & page table will do the switch
+
+    pcb_t *pcb_old = get_current_pcb();
+
+    // pcb_new should be selected by the scheduling algorithm
+    pcb_t *pcb_new = pcb_old->next;
+    printf("    \033[31;1mOS schedule [%ld] -> [%ld]\033[0m\n", pcb_old->pid, pcb_new->pid);
+
+    // context switch
+
+    // store the context of the old process
+    store_context(pcb_old);
+
+    // restore the context of the new process
+    restore_context(pcb_new);
+
+    // update TR -> TSS
+    tr_global_tss.ESP0 = get_kstack_RSP() + KERNEL_STACK_SIZE;
+
+    // update CR3 -> page table in MMU
+    // will cause the refreshing of MMU TLB cache
+    cpu_controls.cr3 = (uint64_t)(pcb_new->mm.pgd);
 }

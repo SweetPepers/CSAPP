@@ -12,6 +12,8 @@
 #define PAGE_TABLE_ENTRY_NUMBER (512)
 #define PAGE_SIZE (4096)
 
+
+// used only on user process
 uint8_t pm[PHYSICAL_MEMROY_SPACE];
 
 

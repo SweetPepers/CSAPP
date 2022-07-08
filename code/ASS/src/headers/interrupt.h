@@ -7,6 +7,10 @@
 
 #define KERNEL_malloc malloc
 
+
+// USE this function VERY VERY carefully
+int KERNEL_free(void *ptr);
+
 // executed by hardware(cpu)
 typedef struct {
   // error code

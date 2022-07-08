@@ -974,3 +974,16 @@ fork  除了 pid 什么都没改
 - CTX {RAX} (return to user mode)
 
 $ 2^n $ : fork bomb
+
+
+### 42Fork拷贝子进程,准备子进程切换
+主要是内核态
+
+
+### 43Fork拷贝父进程用户态的物理页
+
+![](../picture/43复制完成后.jpg)
+
+拷贝用户态物理页
+
+
