@@ -9,8 +9,7 @@
 
 ## csapp笔记
 
-  因为是每天刷算法题的业余时间看csapp，所以就找了b站上面比较轻松的一个up主讲的[视频](https://space.bilibili.com/4564101/video?tid=0&page=3&keyword=&order=pubdate)  
-  打算跟着这个up在每天晚上看两三个视频然后睡觉，感觉还算风趣
+  每天刷算法题的业余时间看csapp
 
 ## 实验
 
